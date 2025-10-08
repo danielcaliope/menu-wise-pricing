@@ -15,11 +15,23 @@ import { Plus, Pencil, Trash2, ChefHat } from "lucide-react";
 import { z } from "zod";
 import { RecipeIngredientsDialog } from "@/components/RecipeIngredientsDialog";
 
+// Validação de segurança para prevenir injection attacks
 const recipeSchema = z.object({
-  name: z.string().min(1, "Nome é obrigatório"),
-  waste_percentage: z.number().min(0).max(100),
-  prep_time_minutes: z.number().min(0),
-  notes: z.string().optional(),
+  name: z.string()
+    .trim()
+    .min(1, "Nome é obrigatório")
+    .max(200, "Nome deve ter no máximo 200 caracteres")
+    .regex(/^[a-zA-ZÀ-ÿ0-9\s\-.,()]+$/, "Nome contém caracteres inválidos"),
+  waste_percentage: z.number()
+    .min(0, "Porcentagem deve ser positiva")
+    .max(100, "Porcentagem não pode ser maior que 100"),
+  prep_time_minutes: z.number()
+    .min(0, "Tempo deve ser positivo")
+    .max(10000, "Tempo muito longo"),
+  notes: z.string()
+    .trim()
+    .max(1000, "Observações devem ter no máximo 1000 caracteres")
+    .optional(),
 });
 
 type Recipe = {
@@ -251,6 +263,8 @@ export default function Recipes() {
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     placeholder="Ex: Pizza Margherita"
+                    maxLength={200}
+                    autoComplete="off"
                     required
                   />
                 </div>
@@ -261,6 +275,8 @@ export default function Recipes() {
                       id="waste"
                       type="number"
                       step="0.01"
+                      min="0"
+                      max="100"
                       value={formData.waste_percentage}
                       onChange={(e) => setFormData({ ...formData, waste_percentage: e.target.value })}
                       required
@@ -271,6 +287,8 @@ export default function Recipes() {
                     <Input
                       id="prep"
                       type="number"
+                      min="0"
+                      max="10000"
                       value={formData.prep_time_minutes}
                       onChange={(e) => setFormData({ ...formData, prep_time_minutes: e.target.value })}
                       required
@@ -284,6 +302,7 @@ export default function Recipes() {
                     value={formData.notes}
                     onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                     placeholder="Instruções especiais ou observações..."
+                    maxLength={1000}
                     rows={3}
                   />
                 </div>

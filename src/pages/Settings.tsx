@@ -8,6 +8,31 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
+import { z } from "zod";
+
+// Validação de segurança para prevenir SQL injection e code injection
+const profileSchema = z.object({
+  full_name: z.string()
+    .trim()
+    .min(1, "Nome é obrigatório")
+    .max(100, "Nome deve ter no máximo 100 caracteres")
+    .regex(/^[a-zA-ZÀ-ÿ\s'-]+$/, "Nome contém caracteres inválidos"),
+  location_city: z.string()
+    .trim()
+    .max(100, "Cidade deve ter no máximo 100 caracteres")
+    .regex(/^[a-zA-ZÀ-ÿ\s'-]*$/, "Cidade contém caracteres inválidos")
+    .optional(),
+  location_state: z.string()
+    .trim()
+    .max(50, "Estado deve ter no máximo 50 caracteres")
+    .regex(/^[a-zA-ZÀ-ÿ\s]*$/, "Estado contém caracteres inválidos")
+    .optional(),
+  location_cep: z.string()
+    .trim()
+    .regex(/^\d{5}-?\d{3}$/, "CEP inválido (formato: 00000-000)")
+    .optional()
+    .or(z.literal("")),
+});
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -52,30 +77,54 @@ export default function Settings() {
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const { error } = await supabase
-      .from("profiles")
-      .update({
+    try {
+      // Validação com Zod para prevenir injection attacks
+      const validated = profileSchema.parse({
         full_name: profile.full_name,
-        location_city: profile.location_city,
-        location_state: profile.location_state,
-        location_cep: profile.location_cep,
-      })
-      .eq("id", user.id);
+        location_city: profile.location_city || undefined,
+        location_state: profile.location_state || undefined,
+        location_cep: profile.location_cep || undefined,
+      });
 
-    if (error) {
-      toast({
-        title: "Erro ao atualizar",
-        description: error.message,
-        variant: "destructive",
-      });
-    } else {
-      toast({
-        title: "Perfil atualizado!",
-        description: "Suas informações foram salvas com sucesso",
-      });
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          full_name: validated.full_name,
+          location_city: validated.location_city || null,
+          location_state: validated.location_state || null,
+          location_cep: validated.location_cep || null,
+        })
+        .eq("id", user.id);
+
+      if (error) {
+        toast({
+          title: "Erro ao atualizar",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Perfil atualizado!",
+          description: "Suas informações foram salvas com sucesso",
+        });
+      }
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast({
+          title: "Erro de validação",
+          description: error.errors[0].message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Erro ao atualizar",
+          description: "Ocorreu um erro inesperado",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -195,6 +244,8 @@ export default function Settings() {
                   id="name"
                   value={profile.full_name}
                   onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
+                  maxLength={100}
+                  required
                 />
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
@@ -204,6 +255,7 @@ export default function Settings() {
                     id="city"
                     value={profile.location_city}
                     onChange={(e) => setProfile({ ...profile, location_city: e.target.value })}
+                    maxLength={100}
                   />
                 </div>
                 <div className="space-y-2">
@@ -212,6 +264,7 @@ export default function Settings() {
                     id="state"
                     value={profile.location_state}
                     onChange={(e) => setProfile({ ...profile, location_state: e.target.value })}
+                    maxLength={50}
                   />
                 </div>
               </div>
@@ -222,6 +275,8 @@ export default function Settings() {
                   value={profile.location_cep}
                   onChange={(e) => setProfile({ ...profile, location_cep: e.target.value })}
                   placeholder="00000-000"
+                  maxLength={9}
+                  pattern="\d{5}-?\d{3}"
                 />
               </div>
               <Button type="submit" className="w-full">

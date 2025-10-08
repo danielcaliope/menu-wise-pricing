@@ -9,10 +9,23 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
 import { z } from "zod";
 
+// Validação de segurança reforçada para prevenir injection attacks
 const authSchema = z.object({
-  email: z.string().email({ message: "E-mail inválido" }),
-  password: z.string().min(6, { message: "Senha deve ter no mínimo 6 caracteres" }),
-  fullName: z.string().optional(),
+  email: z.string()
+    .trim()
+    .email({ message: "E-mail inválido" })
+    .max(255, "E-mail deve ter no máximo 255 caracteres")
+    .toLowerCase(),
+  password: z.string()
+    .min(8, { message: "Senha deve ter no mínimo 8 caracteres" })
+    .max(72, "Senha deve ter no máximo 72 caracteres")
+    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, "Senha deve conter maiúsculas, minúsculas e números"),
+  fullName: z.string()
+    .trim()
+    .min(1, "Nome é obrigatório")
+    .max(100, "Nome deve ter no máximo 100 caracteres")
+    .regex(/^[a-zA-ZÀ-ÿ\s'-]+$/, "Nome contém caracteres inválidos")
+    .optional(),
 });
 
 export default function Auth() {
@@ -166,6 +179,8 @@ export default function Auth() {
                       placeholder="seu@email.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
+                      maxLength={255}
+                      autoComplete="email"
                       required
                     />
                   </div>
@@ -177,6 +192,8 @@ export default function Auth() {
                       placeholder="••••••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
+                      maxLength={72}
+                      autoComplete="current-password"
                       required
                     />
                   </div>
@@ -196,6 +213,8 @@ export default function Auth() {
                       placeholder="Seu nome"
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
+                      maxLength={100}
+                      autoComplete="name"
                       required
                     />
                   </div>
@@ -207,6 +226,8 @@ export default function Auth() {
                       placeholder="seu@email.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
+                      maxLength={255}
+                      autoComplete="email"
                       required
                     />
                   </div>
@@ -218,8 +239,13 @@ export default function Auth() {
                       placeholder="••••••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
+                      maxLength={72}
+                      autoComplete="new-password"
                       required
                     />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Mínimo 8 caracteres, incluindo maiúsculas, minúsculas e números
+                    </p>
                   </div>
                   <Button type="submit" className="w-full" disabled={loading}>
                     {loading ? "Cadastrando..." : "Cadastrar"}

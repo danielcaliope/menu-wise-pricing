@@ -13,11 +13,27 @@ import { toast } from "@/hooks/use-toast";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { z } from "zod";
 
+// Validação de segurança para prevenir injection attacks
 const ingredientSchema = z.object({
-  name: z.string().min(1, "Nome é obrigatório"),
-  unit: z.string().min(1, "Unidade é obrigatória"),
-  unit_cost: z.number().min(0, "Custo deve ser positivo"),
-  supplier: z.string().optional().nullable(),
+  name: z.string()
+    .trim()
+    .min(1, "Nome é obrigatório")
+    .max(100, "Nome deve ter no máximo 100 caracteres")
+    .regex(/^[a-zA-ZÀ-ÿ0-9\s\-.,()]+$/, "Nome contém caracteres inválidos"),
+  unit: z.string()
+    .trim()
+    .min(1, "Unidade é obrigatória")
+    .max(20, "Unidade deve ter no máximo 20 caracteres")
+    .regex(/^[a-zA-Z\s]+$/, "Unidade contém caracteres inválidos"),
+  unit_cost: z.number()
+    .min(0, "Custo deve ser positivo")
+    .max(999999.99, "Custo muito alto"),
+  supplier: z.string()
+    .trim()
+    .max(100, "Fornecedor deve ter no máximo 100 caracteres")
+    .regex(/^[a-zA-ZÀ-ÿ0-9\s\-.,()]*$/, "Fornecedor contém caracteres inválidos")
+    .optional()
+    .nullable(),
 });
 
 type Ingredient = {
@@ -239,6 +255,8 @@ export default function Ingredients() {
                     id="name"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    maxLength={100}
+                    autoComplete="off"
                     required
                   />
                 </div>
@@ -267,6 +285,8 @@ export default function Ingredients() {
                     id="cost"
                     type="number"
                     step="0.01"
+                    min="0"
+                    max="999999.99"
                     value={formData.unit_cost}
                     onChange={(e) => setFormData({ ...formData, unit_cost: e.target.value })}
                     required
@@ -278,6 +298,8 @@ export default function Ingredients() {
                     id="supplier"
                     value={formData.supplier}
                     onChange={(e) => setFormData({ ...formData, supplier: e.target.value })}
+                    maxLength={100}
+                    autoComplete="off"
                   />
                 </div>
                 <Button type="submit" className="w-full">

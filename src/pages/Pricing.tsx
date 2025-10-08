@@ -366,8 +366,16 @@ export default function Pricing() {
                 <Input
                   type="number"
                   step="0.1"
+                  min="0"
+                  max="1000"
                   value={config.profit_margin_percentage}
-                  onChange={(e) => setConfig({ ...config, profit_margin_percentage: parseFloat(e.target.value) })}
+                  onChange={(e) => {
+                    const value = parseFloat(e.target.value);
+                    if (!isNaN(value) && value >= 0 && value <= 1000) {
+                      setConfig({ ...config, profit_margin_percentage: value });
+                    }
+                  }}
+                  required
                 />
               </div>
               <div className="space-y-2">
@@ -375,8 +383,16 @@ export default function Pricing() {
                 <Input
                   type="number"
                   step="0.1"
+                  min="0"
+                  max="100"
                   value={config.tax_percentage}
-                  onChange={(e) => setConfig({ ...config, tax_percentage: parseFloat(e.target.value) })}
+                  onChange={(e) => {
+                    const value = parseFloat(e.target.value);
+                    if (!isNaN(value) && value >= 0 && value <= 100) {
+                      setConfig({ ...config, tax_percentage: value });
+                    }
+                  }}
+                  required
                 />
               </div>
             </div>
@@ -453,8 +469,16 @@ export default function Pricing() {
                         <Input
                           type="number"
                           step="0.01"
+                          min="0.1"
+                          max="10"
                           value={config.regional_factor}
-                          onChange={(e) => setConfig({ ...config, regional_factor: parseFloat(e.target.value) })}
+                          onChange={(e) => {
+                            const value = parseFloat(e.target.value);
+                            if (!isNaN(value) && value >= 0.1 && value <= 10) {
+                              setConfig({ ...config, regional_factor: value });
+                            }
+                          }}
+                          required
                         />
                       </div>
                     </div>
