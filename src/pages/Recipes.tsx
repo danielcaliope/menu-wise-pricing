@@ -389,7 +389,7 @@ export default function Recipes() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="notes">Observações</Label>
+                  <Label htmlFor="notes">Observações (opcional)</Label>
                   <Textarea
                     id="notes"
                     value={formData.notes}
