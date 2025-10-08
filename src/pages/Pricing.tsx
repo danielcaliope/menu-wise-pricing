@@ -553,7 +553,7 @@ export default function Pricing() {
                       R$ {suggestedPrice.toFixed(2)}
                     </p>
                   </div>
-                  <div className="text-center p-6 bg-gradient-primary rounded-lg text-white border-2 border-primary">
+                  <div className="text-center p-6 bg-gradient-primary rounded-lg text-primary-foreground border-2 border-primary">
                     <p className="text-sm opacity-90 mb-2">Preço Com Delivery</p>
                     <p className="text-3xl font-bold">
                       R$ {(suggestedPrice * (1 + config.delivery_fee_percentage / 100)).toFixed(2)}
