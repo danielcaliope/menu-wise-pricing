@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2, ChefHat, Calculator } from "lucide-react";
+import { Plus, Pencil, Trash2, ChefHat, Calculator, Coffee, IceCream, Salad, Pizza, Cake, Wine, UtensilsCrossed, Cookie, Soup, Fish, Beef, Tag, LucideIcon } from "lucide-react";
 import { z } from "zod";
 import { RecipeIngredientsDialog } from "@/components/RecipeIngredientsDialog";
 import { PortionCalculator } from "@/components/PortionCalculator";
@@ -39,6 +39,27 @@ const recipeSchema = z.object({
     .max(1000, "Observações devem ter no máximo 1000 caracteres")
     .optional(),
 });
+
+const ICON_MAP: Record<string, LucideIcon> = {
+  ChefHat,
+  Coffee,
+  IceCream,
+  Salad,
+  Pizza,
+  Cake,
+  Wine,
+  UtensilsCrossed,
+  Cookie,
+  Soup,
+  Fish,
+  Beef,
+  Tag,
+};
+
+const CategoryIcon = ({ iconName, className }: { iconName: string | null; className?: string }) => {
+  const Icon = iconName && ICON_MAP[iconName] ? ICON_MAP[iconName] : Tag;
+  return <Icon className={className} />;
+};
 
 type Recipe = {
   id: string;
@@ -382,7 +403,10 @@ export default function Recipes() {
                     <SelectContent>
                       {categories.map((cat) => (
                         <SelectItem key={cat.id} value={cat.id}>
-                          {cat.icon} {cat.name}
+                          <div className="flex items-center gap-2">
+                            <CategoryIcon iconName={cat.icon} className="h-4 w-4" />
+                            <span>{cat.name}</span>
+                          </div>
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -437,7 +461,10 @@ export default function Recipes() {
                     <SelectItem value="all">Todas</SelectItem>
                     {categories.map((cat) => (
                       <SelectItem key={cat.id} value={cat.id}>
-                        {cat.icon} {cat.name}
+                        <div className="flex items-center gap-2">
+                          <CategoryIcon iconName={cat.icon} className="h-4 w-4" />
+                          <span>{cat.name}</span>
+                        </div>
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -490,12 +517,14 @@ export default function Recipes() {
                           {category ? (
                             <Badge 
                               variant="secondary"
+                              className="gap-1.5"
                               style={{ 
                                 backgroundColor: category.color || "#3b82f6",
                                 color: "white"
                               }}
                             >
-                              {category.icon} {category.name}
+                              <CategoryIcon iconName={category.icon} className="h-4 w-4" />
+                              {category.name}
                             </Badge>
                           ) : (
                             <span className="text-muted-foreground text-sm">Sem categoria</span>
