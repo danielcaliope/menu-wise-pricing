@@ -204,6 +204,8 @@ export default function Pricing() {
         tax_percentage: config.tax_percentage,
         regional_factor: config.regional_factor,
         income_level: config.income_level,
+      }, {
+        onConflict: 'user_id'
       });
 
     if (error) {
