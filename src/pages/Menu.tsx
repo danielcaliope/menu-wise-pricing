@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Clock, ChefHat, Coffee, IceCream, Salad, Pizza, Cake, Wine, UtensilsCrossed, Cookie, Soup, Fish, Beef, Tag, Trash2, LucideIcon } from "lucide-react";
+import { Clock, ChefHat, Coffee, IceCream, Salad, Pizza, Cake, Wine, UtensilsCrossed, Cookie, Soup, Fish, Beef, Tag, Trash2, LucideIcon, Calculator } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { Layout } from "@/components/Layout";
@@ -57,6 +58,7 @@ type MenuRecipe = Recipe & {
 };
 
 export default function Menu() {
+  const navigate = useNavigate();
   const [recipes, setRecipes] = useState<MenuRecipe[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -272,10 +274,16 @@ export default function Menu() {
                         )}
                       </div>
                     ) : (
-                      <div className="border-t pt-4">
-                        <p className="text-center text-muted-foreground text-sm">
-                          Preço sob consulta
-                        </p>
+                      <div className="border-t pt-4 flex justify-center">
+                        <Button
+                          onClick={() => navigate(`/pricing?recipe=${recipe.id}`)}
+                          variant="default"
+                          size="sm"
+                          className="gap-2"
+                        >
+                          <Calculator className="h-4 w-4" />
+                          Precificar
+                        </Button>
                       </div>
                     )}
                   </CardContent>

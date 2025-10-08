@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Layout } from "@/components/Layout";
 import { Button } from "@/components/ui/button";
@@ -44,6 +44,7 @@ type PricingHistoryItem = {
 
 export default function Pricing() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [selectedRecipeId, setSelectedRecipeId] = useState("");
@@ -126,6 +127,12 @@ export default function Pricing() {
       });
     } else {
       setRecipes(data || []);
+      
+      // Check if there's a recipe ID in URL params
+      const recipeParam = searchParams.get("recipe");
+      if (recipeParam && data?.some(r => r.id === recipeParam)) {
+        setSelectedRecipeId(recipeParam);
+      }
     }
     setLoading(false);
   };
