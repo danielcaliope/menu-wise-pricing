@@ -24,6 +24,7 @@ type PricingConfig = {
   tax_percentage: number;
   regional_factor: number;
   income_level: string;
+  delivery_fee_percentage: number;
 };
 
 type PricingHistoryItem = {
@@ -35,6 +36,9 @@ type PricingHistoryItem = {
   tax_percentage: number;
   regional_factor: number;
   suggested_price: number;
+  delivery_fee_percentage: number;
+  price_without_delivery: number;
+  price_with_delivery: number;
   created_at: string;
 };
 
@@ -49,6 +53,7 @@ export default function Pricing() {
     tax_percentage: 15,
     regional_factor: 1.0,
     income_level: "medium",
+    delivery_fee_percentage: 0,
   });
   const [suggestedPrice, setSuggestedPrice] = useState(0);
   const [profile, setProfile] = useState<any>(null);
@@ -138,6 +143,7 @@ export default function Pricing() {
         tax_percentage: Number(data.tax_percentage),
         regional_factor: Number(data.regional_factor),
         income_level: data.income_level || "medium",
+        delivery_fee_percentage: Number(data.delivery_fee_percentage || 0),
       });
     } else if (!error) {
       // Create default config
@@ -204,6 +210,7 @@ export default function Pricing() {
         tax_percentage: config.tax_percentage,
         regional_factor: config.regional_factor,
         income_level: config.income_level,
+        delivery_fee_percentage: config.delivery_fee_percentage,
       }, {
         onConflict: 'user_id'
       });
@@ -249,6 +256,8 @@ export default function Pricing() {
     const selectedRecipe = recipes.find(r => r.id === selectedRecipeId);
     if (!selectedRecipe) return;
 
+    const priceWithDelivery = suggestedPrice * (1 + config.delivery_fee_percentage / 100);
+
     const { error } = await supabase
       .from("pricing_history")
       .insert([{
@@ -260,6 +269,9 @@ export default function Pricing() {
         tax_percentage: config.tax_percentage,
         regional_factor: config.regional_factor,
         suggested_price: suggestedPrice,
+        delivery_fee_percentage: config.delivery_fee_percentage,
+        price_without_delivery: suggestedPrice,
+        price_with_delivery: priceWithDelivery,
       }]);
 
     if (error) {
@@ -406,6 +418,23 @@ export default function Pricing() {
                   required
                 />
               </div>
+              <div className="space-y-2">
+                <Label>Taxa Serviço Delivery (%)</Label>
+                <Input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  max="100"
+                  value={config.delivery_fee_percentage}
+                  onChange={(e) => {
+                    const value = parseFloat(e.target.value);
+                    if (!isNaN(value) && value >= 0 && value <= 100) {
+                      setConfig({ ...config, delivery_fee_percentage: value });
+                    }
+                  }}
+                  required
+                />
+              </div>
             </div>
 
             <div className="p-4 bg-accent/20 rounded-lg border border-accent/30">
@@ -517,11 +546,24 @@ export default function Pricing() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="text-center p-6 bg-gradient-primary rounded-lg text-white">
-                  <p className="text-sm opacity-90 mb-2">Preço de Venda Sugerido</p>
-                  <p className="text-5xl font-bold">
-                    R$ {suggestedPrice.toFixed(2)}
-                  </p>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="text-center p-6 bg-muted rounded-lg border-2">
+                    <p className="text-sm text-muted-foreground mb-2">Preço Sem Delivery</p>
+                    <p className="text-3xl font-bold text-foreground">
+                      R$ {suggestedPrice.toFixed(2)}
+                    </p>
+                  </div>
+                  <div className="text-center p-6 bg-gradient-primary rounded-lg text-white border-2 border-primary">
+                    <p className="text-sm opacity-90 mb-2">Preço Com Delivery</p>
+                    <p className="text-3xl font-bold">
+                      R$ {(suggestedPrice * (1 + config.delivery_fee_percentage / 100)).toFixed(2)}
+                    </p>
+                    {config.delivery_fee_percentage > 0 && (
+                      <p className="text-xs opacity-75 mt-1">
+                        +{config.delivery_fee_percentage}% taxa delivery
+                      </p>
+                    )}
+                  </div>
                 </div>
 
                 <div className="space-y-3 p-4 bg-muted rounded-lg">
@@ -546,15 +588,33 @@ export default function Pricing() {
                   </div>
                   <div className="border-t pt-3 mt-3">
                     <div className="flex justify-between font-semibold">
-                      <span>Preço Final:</span>
-                      <span className="text-primary text-lg">R$ {suggestedPrice.toFixed(2)}</span>
+                      <span>Preço Sem Delivery:</span>
+                      <span className="text-foreground text-lg">R$ {suggestedPrice.toFixed(2)}</span>
                     </div>
                   </div>
+                  {config.delivery_fee_percentage > 0 && (
+                    <>
+                      <div className="flex justify-between text-sm">
+                        <span>+ Taxa Delivery ({config.delivery_fee_percentage}%):</span>
+                        <span className="font-medium text-primary">
+                          + R$ {(suggestedPrice * (config.delivery_fee_percentage / 100)).toFixed(2)}
+                        </span>
+                      </div>
+                      <div className="border-t pt-3">
+                        <div className="flex justify-between font-semibold">
+                          <span>Preço Com Delivery:</span>
+                          <span className="text-primary text-lg">
+                            R$ {(suggestedPrice * (1 + config.delivery_fee_percentage / 100)).toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
 
                  <div className="p-3 bg-success/10 border border-success/20 rounded-lg">
                   <p className="text-sm text-center">
-                    <span className="font-semibold">Lucro por venda:</span>{" "}
+                    <span className="font-semibold">Lucro por venda (sem delivery):</span>{" "}
                     <span className="text-success font-bold">
                       R$ {(suggestedPrice - recipeCost - taxAmount).toFixed(2)}
                     </span>
@@ -614,10 +674,17 @@ export default function Pricing() {
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="text-lg font-bold text-primary">
-                            R$ {Number(item.suggested_price).toFixed(2)}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
+                          <div className="space-y-1">
+                            <p className="text-sm text-muted-foreground">
+                              Sem delivery: <span className="font-semibold text-foreground">R$ {Number(item.price_without_delivery || item.suggested_price).toFixed(2)}</span>
+                            </p>
+                            {item.delivery_fee_percentage > 0 && (
+                              <p className="text-lg font-bold text-primary">
+                                Com delivery: R$ {Number(item.price_with_delivery || item.suggested_price).toFixed(2)}
+                              </p>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
                             Custo: R$ {Number(item.recipe_cost).toFixed(2)}
                           </p>
                         </div>
@@ -632,6 +699,11 @@ export default function Pricing() {
                         <Badge variant="secondary" className="text-xs">
                           Fator: {Number(item.regional_factor)}x
                         </Badge>
+                        {item.delivery_fee_percentage > 0 && (
+                          <Badge variant="outline" className="text-xs">
+                            Delivery: {Number(item.delivery_fee_percentage)}%
+                          </Badge>
+                        )}
                       </div>
                     </div>
                   ))}

@@ -237,6 +237,7 @@ export type Database = {
       pricing_configs: {
         Row: {
           created_at: string | null
+          delivery_fee_percentage: number | null
           id: string
           income_level: string | null
           profit_margin_percentage: number | null
@@ -247,6 +248,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          delivery_fee_percentage?: number | null
           id?: string
           income_level?: string | null
           profit_margin_percentage?: number | null
@@ -257,6 +259,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          delivery_fee_percentage?: number | null
           id?: string
           income_level?: string | null
           profit_margin_percentage?: number | null
@@ -270,7 +273,10 @@ export type Database = {
       pricing_history: {
         Row: {
           created_at: string
+          delivery_fee_percentage: number | null
           id: string
+          price_with_delivery: number | null
+          price_without_delivery: number | null
           profit_margin_percentage: number
           recipe_cost: number
           recipe_id: string
@@ -282,7 +288,10 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          delivery_fee_percentage?: number | null
           id?: string
+          price_with_delivery?: number | null
+          price_without_delivery?: number | null
           profit_margin_percentage: number
           recipe_cost: number
           recipe_id: string
@@ -294,7 +303,10 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          delivery_fee_percentage?: number | null
           id?: string
+          price_with_delivery?: number | null
+          price_without_delivery?: number | null
           profit_margin_percentage?: number
           recipe_cost?: number
           recipe_id?: string
