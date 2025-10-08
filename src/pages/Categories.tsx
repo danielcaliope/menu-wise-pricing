@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2, Tag } from "lucide-react";
+import { Plus, Pencil, Trash2, Tag, ChefHat, Coffee, IceCream, Salad, Pizza, Cake, Wine, UtensilsCrossed, Cookie, Soup, Fish, Beef, LucideIcon } from "lucide-react";
 import { z } from "zod";
 import { SearchBar } from "@/components/SearchBar";
 import { EmptyState } from "@/components/EmptyState";
@@ -33,15 +33,33 @@ type Category = {
   color: string | null;
 };
 
-const ICON_OPTIONS = [
-  "ChefHat", "Coffee", "IceCream", "Salad", "Pizza", "Cake",
-  "Wine", "UtensilsCrossed", "Cookie", "Soup", "Fish", "Beef"
-];
+const ICON_MAP: Record<string, LucideIcon> = {
+  ChefHat,
+  Coffee,
+  IceCream,
+  Salad,
+  Pizza,
+  Cake,
+  Wine,
+  UtensilsCrossed,
+  Cookie,
+  Soup,
+  Fish,
+  Beef,
+  Tag,
+};
+
+const ICON_OPTIONS = Object.keys(ICON_MAP).filter(key => key !== "Tag");
 
 const COLOR_OPTIONS = [
   "#ef4444", "#f59e0b", "#10b981", "#3b82f6", "#8b5cf6",
   "#ec4899", "#14b8a6", "#f97316", "#06b6d4", "#a855f7"
 ];
+
+const CategoryIcon = ({ iconName, className }: { iconName: string | null; className?: string }) => {
+  const Icon = iconName && ICON_MAP[iconName] ? ICON_MAP[iconName] : Tag;
+  return <Icon className={className} />;
+};
 
 export default function Categories() {
   const navigate = useNavigate();
@@ -235,16 +253,16 @@ export default function Categories() {
                 <div className="space-y-2">
                   <Label>Ícone</Label>
                   <div className="grid grid-cols-6 gap-2">
-                    {ICON_OPTIONS.map((icon) => (
+                    {ICON_OPTIONS.map((iconName) => (
                       <button
-                        key={icon}
+                        key={iconName}
                         type="button"
-                        onClick={() => setFormData({ ...formData, icon })}
-                        className={`p-2 border rounded hover:bg-accent ${
-                          formData.icon === icon ? "bg-accent border-primary" : ""
+                        onClick={() => setFormData({ ...formData, icon: iconName })}
+                        className={`p-2 border rounded hover:bg-accent flex items-center justify-center ${
+                          formData.icon === iconName ? "bg-accent border-primary" : ""
                         }`}
                       >
-                        {icon}
+                        <CategoryIcon iconName={iconName} className="h-5 w-5" />
                       </button>
                     ))}
                   </div>
@@ -318,12 +336,14 @@ export default function Categories() {
                       <TableCell>
                         <Badge 
                           variant="secondary"
+                          className="gap-1.5"
                           style={{ 
                             backgroundColor: category.color || "#3b82f6",
                             color: "white"
                           }}
                         >
-                          {category.icon} {category.name}
+                          <CategoryIcon iconName={category.icon} className="h-4 w-4" />
+                          {category.name}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
