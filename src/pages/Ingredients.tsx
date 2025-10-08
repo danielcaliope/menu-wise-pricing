@@ -17,7 +17,7 @@ const ingredientSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
   unit: z.string().min(1, "Unidade é obrigatória"),
   unit_cost: z.number().min(0, "Custo deve ser positivo"),
-  supplier: z.string().optional(),
+  supplier: z.string().optional().nullable(),
 });
 
 type Ingredient = {
@@ -76,18 +76,47 @@ export default function Ingredients() {
     e.preventDefault();
 
     try {
+      // Validate that required fields are filled
+      if (!formData.name.trim()) {
+        toast({
+          title: "Erro de validação",
+          description: "Nome do ingrediente é obrigatório",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!formData.unit_cost || formData.unit_cost.trim() === "") {
+        toast({
+          title: "Erro de validação",
+          description: "Custo unitário é obrigatório",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const cost = parseFloat(formData.unit_cost);
+      if (isNaN(cost) || cost < 0) {
+        toast({
+          title: "Erro de validação",
+          description: "Custo unitário deve ser um número válido e positivo",
+          variant: "destructive",
+        });
+        return;
+      }
+
       const validated = ingredientSchema.parse({
-        name: formData.name,
+        name: formData.name.trim(),
         unit: formData.unit,
-        unit_cost: parseFloat(formData.unit_cost),
-        supplier: formData.supplier || null,
+        unit_cost: cost,
+        supplier: formData.supplier.trim() || undefined,
       });
 
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
       if (editingId) {
-        const { error } = await supabase
+          const { error } = await supabase
           .from("ingredients")
           .update({
             name: validated.name,
