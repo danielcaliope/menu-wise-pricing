@@ -181,7 +181,7 @@ export default function Recipes() {
         name: formData.name,
         waste_percentage: parseFloat(formData.waste_percentage),
         prep_time_minutes: parseInt(formData.prep_time_minutes),
-        notes: formData.notes || null,
+        notes: formData.notes,
       });
 
       const recipeData = {
