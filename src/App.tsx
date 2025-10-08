@@ -12,6 +12,7 @@ import Categories from "./pages/Categories";
 import Stock from "./pages/Stock";
 import Pricing from "./pages/Pricing";
 import CostAlerts from "./pages/CostAlerts";
+import CompetitiveAnalysis from "./pages/CompetitiveAnalysis";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
@@ -34,6 +35,7 @@ const App = () => (
           <Route path="/stock" element={<Stock />} />
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/cost-alerts" element={<CostAlerts />} />
+          <Route path="/competitive-analysis" element={<CompetitiveAnalysis />} />
           <Route path="/settings" element={<Settings />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

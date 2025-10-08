@@ -44,6 +44,56 @@ export type Database = {
         }
         Relationships: []
       }
+      competitive_analysis: {
+        Row: {
+          competitor_name: string
+          competitor_price: number
+          created_at: string
+          id: string
+          market_position: string | null
+          notes: string | null
+          our_price: number
+          price_difference_percentage: number
+          recipe_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          competitor_name: string
+          competitor_price: number
+          created_at?: string
+          id?: string
+          market_position?: string | null
+          notes?: string | null
+          our_price: number
+          price_difference_percentage: number
+          recipe_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          competitor_name?: string
+          competitor_price?: number
+          created_at?: string
+          id?: string
+          market_position?: string | null
+          notes?: string | null
+          our_price?: number
+          price_difference_percentage?: number
+          recipe_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competitive_analysis_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cost_alert_history: {
         Row: {
           alert_type: string
