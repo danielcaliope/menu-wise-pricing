@@ -347,16 +347,15 @@ export default function Recipes() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="category">Categoria</Label>
+                  <Label htmlFor="category">Categoria (opcional)</Label>
                   <Select
-                    value={formData.category_id}
+                    value={formData.category_id || undefined}
                     onValueChange={(value) => setFormData({ ...formData, category_id: value })}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione uma categoria" />
+                      <SelectValue placeholder="Sem categoria" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Sem categoria</SelectItem>
                       {categories.map((cat) => (
                         <SelectItem key={cat.id} value={cat.id}>
                           {cat.icon} {cat.name}
@@ -408,10 +407,10 @@ export default function Recipes() {
               <div className="flex gap-2 w-full sm:w-auto">
                 <Select value={selectedCategory} onValueChange={setSelectedCategory}>
                   <SelectTrigger className="w-full sm:w-48">
-                    <SelectValue placeholder="Todas as categorias" />
+                    <SelectValue placeholder="Filtrar por categoria" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Todas as categorias</SelectItem>
+                    <SelectItem value="all">Todas</SelectItem>
                     {categories.map((cat) => (
                       <SelectItem key={cat.id} value={cat.id}>
                         {cat.icon} {cat.name}
