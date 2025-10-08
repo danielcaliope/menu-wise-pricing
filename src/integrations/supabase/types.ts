@@ -44,6 +44,44 @@ export type Database = {
         }
         Relationships: []
       }
+      ingredient_stock: {
+        Row: {
+          created_at: string
+          current_quantity: number
+          id: string
+          ingredient_id: string
+          last_updated: string
+          min_quantity: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_quantity?: number
+          id?: string
+          ingredient_id: string
+          last_updated?: string
+          min_quantity?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_quantity?: number
+          id?: string
+          ingredient_id?: string
+          last_updated?: string
+          min_quantity?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ingredient_stock_ingredient_id_fkey"
+            columns: ["ingredient_id"]
+            isOneToOne: false
+            referencedRelation: "ingredients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ingredients: {
         Row: {
           created_at: string | null
@@ -264,6 +302,50 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stock_movements: {
+        Row: {
+          created_at: string
+          id: string
+          ingredient_id: string
+          movement_type: string
+          new_quantity: number
+          notes: string | null
+          previous_quantity: number
+          quantity: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ingredient_id: string
+          movement_type: string
+          new_quantity: number
+          notes?: string | null
+          previous_quantity: number
+          quantity: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ingredient_id?: string
+          movement_type?: string
+          new_quantity?: number
+          notes?: string | null
+          previous_quantity?: number
+          quantity?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_movements_ingredient_id_fkey"
+            columns: ["ingredient_id"]
+            isOneToOne: false
+            referencedRelation: "ingredients"
             referencedColumns: ["id"]
           },
         ]

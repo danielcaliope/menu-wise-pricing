@@ -1,4 +1,4 @@
-import { LayoutDashboard, Package, FileText, Tag, DollarSign, Settings, LogOut } from "lucide-react";
+import { LayoutDashboard, Package, FileText, Tag, DollarSign, Settings, LogOut, PackageCheck } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -20,6 +20,7 @@ const navigation = [
   { title: "Ingredientes", url: "/ingredients", icon: Package },
   { title: "Receitas / Pratos", url: "/recipes", icon: FileText },
   { title: "Categorias", url: "/categories", icon: Tag },
+  { title: "Controle de Estoque", url: "/stock", icon: PackageCheck },
   { title: "Precificação", url: "/pricing", icon: DollarSign },
 ];
 
