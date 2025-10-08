@@ -35,9 +35,9 @@ const recipeSchema = z.object({
     .min(0, "Tempo deve ser positivo")
     .max(10000, "Tempo muito longo"),
   notes: z.string()
-    .trim()
     .max(1000, "Observações devem ter no máximo 1000 caracteres")
-    .optional(),
+    .optional()
+    .or(z.literal("")),
 });
 
 const ICON_MAP: Record<string, LucideIcon> = {
