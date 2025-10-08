@@ -79,6 +79,32 @@ export default function Settings() {
     }
   };
 
+  const handleTogglePlan = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const newPlan = profile.plan === "free" ? "paid" : "free";
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({ plan: newPlan })
+      .eq("id", user.id);
+
+    if (error) {
+      toast({
+        title: "Erro ao alterar plano",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      setProfile({ ...profile, plan: newPlan });
+      toast({
+        title: `Plano alterado para ${newPlan === "paid" ? "Pago" : "Gratuito"}!`,
+        description: `Agora você ${newPlan === "paid" ? "pode usar o fator regional" : "não pode usar o fator regional"}`,
+      });
+    }
+  };
+
   if (loading) {
     return (
       <Layout>
@@ -107,22 +133,49 @@ export default function Settings() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center justify-between">
-              <div>
-                <Badge variant={profile.plan === "paid" ? "default" : "secondary"}>
-                  {profile.plan === "paid" ? "Plano Pago" : "Plano Gratuito"}
-                </Badge>
-                <p className="text-sm text-muted-foreground mt-2">
-                  {profile.plan === "free"
-                    ? "Até 5 fichas técnicas · Fator regional desabilitado"
-                    : "Fichas ilimitadas · Fator regional ativado"}
-                </p>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Badge variant={profile.plan === "paid" ? "default" : "secondary"}>
+                    {profile.plan === "paid" ? "Plano Pago" : "Plano Gratuito"}
+                  </Badge>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    {profile.plan === "free"
+                      ? "Até 5 fichas técnicas · Fator regional desabilitado"
+                      : "Fichas ilimitadas · Fator regional ativado"}
+                  </p>
+                </div>
+                {profile.plan === "free" && (
+                  <Button variant="outline">
+                    Fazer Upgrade
+                  </Button>
+                )}
               </div>
-              {profile.plan === "free" && (
-                <Button variant="outline">
-                  Fazer Upgrade
-                </Button>
-              )}
+
+              {/* Development Mode Toggle */}
+              <div className="p-4 bg-warning/10 border border-warning/30 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <Badge variant="outline" className="bg-warning text-warning-foreground">
+                        DEV MODE
+                      </Badge>
+                      <span className="font-semibold text-sm">Alternar Plano</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Apenas para testes - alterna entre plano gratuito e pago
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleTogglePlan}
+                    className="gap-2"
+                  >
+                    {profile.plan === "free" ? "→ Premium" : "→ Gratuito"}
+                  </Button>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
