@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
-import { Calculator, TrendingUp, MapPin, DollarSign, History, Save, Info } from "lucide-react";
+import { Calculator, TrendingUp, MapPin, DollarSign, History, Save, Info, Trash2 } from "lucide-react";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { StatsSkeleton } from "@/components/SkeletonLoader";
 
@@ -283,6 +283,27 @@ export default function Pricing() {
     } else {
       toast({ title: "Precificação salva no histórico!" });
       fetchPricingHistory(user.id);
+    }
+  };
+
+  const handleDeletePricingHistory = async (id: string) => {
+    if (!confirm("Tem certeza que deseja excluir este item do histórico?")) return;
+
+    const { error } = await supabase
+      .from("pricing_history")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      toast({
+        title: "Erro ao excluir",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({ title: "Item excluído com sucesso!" });
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) fetchPricingHistory(user.id);
     }
   };
 
@@ -673,20 +694,30 @@ export default function Pricing() {
                             })}
                           </p>
                         </div>
-                        <div className="text-right">
-                          <div className="space-y-1">
-                            <p className="text-sm text-muted-foreground">
-                              Sem delivery: <span className="font-semibold text-foreground">R$ {Number(item.price_without_delivery || item.suggested_price).toFixed(2)}</span>
-                            </p>
-                            {item.delivery_fee_percentage > 0 && (
-                              <p className="text-lg font-bold text-primary">
-                                Com delivery: R$ {Number(item.price_with_delivery || item.suggested_price).toFixed(2)}
+                        <div className="flex items-start gap-3">
+                          <div className="text-right">
+                            <div className="space-y-1">
+                              <p className="text-sm text-muted-foreground">
+                                Sem delivery: <span className="font-semibold text-foreground">R$ {Number(item.price_without_delivery || item.suggested_price).toFixed(2)}</span>
                               </p>
-                            )}
+                              {item.delivery_fee_percentage > 0 && (
+                                <p className="text-lg font-bold text-primary">
+                                  Com delivery: R$ {Number(item.price_with_delivery || item.suggested_price).toFixed(2)}
+                                </p>
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Custo: R$ {Number(item.recipe_cost).toFixed(2)}
+                            </p>
                           </div>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Custo: R$ {Number(item.recipe_cost).toFixed(2)}
-                          </p>
+                          <Button
+                            variant="destructive"
+                            size="icon"
+                            onClick={() => handleDeletePricingHistory(item.id)}
+                            className="h-8 w-8"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </div>
                       <div className="flex gap-2 flex-wrap">

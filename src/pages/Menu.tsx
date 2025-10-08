@@ -3,7 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Clock, ChefHat, Coffee, IceCream, Salad, Pizza, Cake, Wine, UtensilsCrossed, Cookie, Soup, Fish, Beef, Tag, LucideIcon } from "lucide-react";
+import { Clock, ChefHat, Coffee, IceCream, Salad, Pizza, Cake, Wine, UtensilsCrossed, Cookie, Soup, Fish, Beef, Tag, Trash2, LucideIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { Layout } from "@/components/Layout";
 
@@ -60,10 +61,17 @@ export default function Menu() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
+    checkAuth();
     fetchMenuData();
   }, []);
+
+  const checkAuth = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    setIsAuthenticated(!!session);
+  };
 
   const fetchMenuData = async () => {
     try {
@@ -117,7 +125,27 @@ export default function Menu() {
     }
   };
 
-  const filteredRecipes = recipes.filter(recipe => 
+  const handleDeleteRecipe = async (id: string, name: string) => {
+    if (!confirm(`Tem certeza que deseja excluir "${name}" do cardápio?`)) return;
+
+    const { error } = await supabase
+      .from("recipes")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      toast({
+        title: "Erro ao excluir",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({ title: "Item excluído do cardápio!" });
+      fetchMenuData();
+    }
+  };
+
+  const filteredRecipes = recipes.filter(recipe =>
     selectedCategory === "all" || recipe.category_id === selectedCategory
   );
 
@@ -176,19 +204,31 @@ export default function Menu() {
                   <CardContent className="p-6">
                     <div className="flex justify-between items-start mb-3">
                       <h3 className="text-xl font-semibold">{recipe.name}</h3>
-                      {recipe.category && (
-                        <Badge
-                          variant="secondary"
-                          className="gap-1.5"
-                          style={{
-                            backgroundColor: recipe.category.color || "#3b82f6",
-                            color: "white"
-                          }}
-                        >
-                          <CategoryIcon iconName={recipe.category.icon} className="h-4 w-4" />
-                          {recipe.category.name}
-                        </Badge>
-                      )}
+                      <div className="flex items-center gap-2">
+                        {recipe.category && (
+                          <Badge
+                            variant="secondary"
+                            className="gap-1.5"
+                            style={{
+                              backgroundColor: recipe.category.color || "#3b82f6",
+                              color: "white"
+                            }}
+                          >
+                            <CategoryIcon iconName={recipe.category.icon} className="h-4 w-4" />
+                            {recipe.category.name}
+                          </Badge>
+                        )}
+                        {isAuthenticated && (
+                          <Button
+                            variant="destructive"
+                            size="icon"
+                            onClick={() => handleDeleteRecipe(recipe.id, recipe.name)}
+                            className="h-8 w-8"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
 
                     {recipe.notes && (
