@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 interface LayoutProps {
   children: ReactNode;
@@ -12,8 +13,9 @@ export function Layout({ children }: LayoutProps) {
       <div className="min-h-screen flex w-full">
         <AppSidebar />
         <main className="flex-1 flex flex-col">
-          <header className="h-14 border-b border-border flex items-center px-6 bg-card">
+          <header className="h-14 border-b border-border flex items-center justify-between px-6 bg-card">
             <SidebarTrigger />
+            <ThemeToggle />
           </header>
           <div className="flex-1 p-6 overflow-auto">
             {children}
