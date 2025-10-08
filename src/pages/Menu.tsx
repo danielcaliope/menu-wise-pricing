@@ -3,9 +3,30 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Clock, ChefHat } from "lucide-react";
+import { Clock, ChefHat, Coffee, IceCream, Salad, Pizza, Cake, Wine, UtensilsCrossed, Cookie, Soup, Fish, Beef, Tag, LucideIcon } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Layout } from "@/components/Layout";
+
+const ICON_MAP: Record<string, LucideIcon> = {
+  ChefHat,
+  Coffee,
+  IceCream,
+  Salad,
+  Pizza,
+  Cake,
+  Wine,
+  UtensilsCrossed,
+  Cookie,
+  Soup,
+  Fish,
+  Beef,
+  Tag,
+};
+
+const CategoryIcon = ({ iconName, className }: { iconName: string | null; className?: string }) => {
+  const Icon = iconName && ICON_MAP[iconName] ? ICON_MAP[iconName] : Tag;
+  return <Icon className={className} />;
+};
 
 type Category = {
   id: string;
@@ -135,7 +156,7 @@ export default function Menu() {
           </TabsTrigger>
           {categories.map((category) => (
             <TabsTrigger key={category.id} value={category.id} className="gap-2">
-              <span>{category.icon}</span>
+              <CategoryIcon iconName={category.icon} className="h-4 w-4" />
               {category.name}
             </TabsTrigger>
           ))}
@@ -158,12 +179,14 @@ export default function Menu() {
                       {recipe.category && (
                         <Badge
                           variant="secondary"
+                          className="gap-1.5"
                           style={{
                             backgroundColor: recipe.category.color || "#3b82f6",
                             color: "white"
                           }}
                         >
-                          {recipe.category.icon} {recipe.category.name}
+                          <CategoryIcon iconName={recipe.category.icon} className="h-4 w-4" />
+                          {recipe.category.name}
                         </Badge>
                       )}
                     </div>
