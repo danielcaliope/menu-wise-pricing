@@ -74,7 +74,7 @@ export default function Recipes() {
 
     if (error) {
       toast({
-        title: "Erro ao carregar fichas técnicas",
+        title: "Erro ao carregar receitas",
         description: error.message,
         variant: "destructive",
       });
@@ -127,7 +127,7 @@ export default function Recipes() {
           .eq("id", editingId);
 
         if (error) throw error;
-        toast({ title: "Ficha técnica atualizada com sucesso!" });
+        toast({ title: "Receita atualizada com sucesso!" });
       } else {
         const { data, error } = await supabase
           .from("recipes")
@@ -146,7 +146,7 @@ export default function Recipes() {
           setSelectedRecipeId(data.id);
           setIngredientsDialogOpen(true);
         }
-        toast({ title: "Ficha técnica criada! Agora adicione os ingredientes." });
+        toast({ title: "Receita criada! Agora adicione os ingredientes." });
       }
 
       setDialogOpen(false);
@@ -181,7 +181,7 @@ export default function Recipes() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Tem certeza que deseja excluir esta ficha técnica?")) return;
+    if (!confirm("Tem certeza que deseja excluir esta receita?")) return;
 
     const { error } = await supabase.from("recipes").delete().eq("id", id);
 
@@ -192,7 +192,7 @@ export default function Recipes() {
         variant: "destructive",
       });
     } else {
-      toast({ title: "Ficha técnica excluída com sucesso!" });
+      toast({ title: "Receita excluída com sucesso!" });
       fetchRecipes();
     }
   };
@@ -222,7 +222,7 @@ export default function Recipes() {
       <div className="space-y-6 animate-fade-in">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold mb-2">Fichas Técnicas</h1>
+            <h1 className="text-3xl font-bold mb-2">Receitas / Pratos</h1>
             <p className="text-muted-foreground">
               Crie e gerencie suas receitas com ingredientes
             </p>
@@ -234,13 +234,13 @@ export default function Recipes() {
             <DialogTrigger asChild>
               <Button className="gap-2">
                 <Plus className="h-4 w-4" />
-                Nova Ficha Técnica
+                Nova Receita
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>
-                  {editingId ? "Editar Ficha Técnica" : "Nova Ficha Técnica"}
+                  {editingId ? "Editar Receita" : "Nova Receita"}
                 </DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -299,7 +299,7 @@ export default function Recipes() {
           <Card className="border-warning bg-warning/5">
             <CardContent className="pt-6">
               <p className="text-center text-muted-foreground">
-                Você precisa cadastrar ingredientes antes de criar fichas técnicas.
+                Você precisa cadastrar ingredientes antes de criar receitas.
                 <Button
                   variant="link"
                   onClick={() => navigate("/ingredients")}
@@ -314,14 +314,14 @@ export default function Recipes() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Lista de Fichas Técnicas</CardTitle>
+            <CardTitle>Lista de Receitas / Pratos</CardTitle>
           </CardHeader>
           <CardContent>
             {recipes.length === 0 ? (
               <div className="text-center py-12">
                 <ChefHat className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
                 <p className="text-muted-foreground">
-                  Nenhuma ficha técnica criada ainda
+                  Nenhuma receita criada ainda
                 </p>
               </div>
             ) : (

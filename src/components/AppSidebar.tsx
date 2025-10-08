@@ -18,7 +18,7 @@ import {
 const navigation = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Ingredientes", url: "/ingredients", icon: Package },
-  { title: "Fichas Técnicas", url: "/recipes", icon: FileText },
+  { title: "Receitas / Pratos", url: "/recipes", icon: FileText },
   { title: "Precificação", url: "/pricing", icon: DollarSign },
 ];
 

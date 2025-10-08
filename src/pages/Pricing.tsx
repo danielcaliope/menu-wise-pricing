@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
-import { Calculator, TrendingUp, MapPin, DollarSign } from "lucide-react";
+import { Calculator, TrendingUp, MapPin, DollarSign, History, Save, Info } from "lucide-react";
 
 type Recipe = {
   id: string;
@@ -22,6 +22,18 @@ type PricingConfig = {
   tax_percentage: number;
   regional_factor: number;
   income_level: string;
+};
+
+type PricingHistoryItem = {
+  id: string;
+  recipe_id: string;
+  recipe_name: string;
+  recipe_cost: number;
+  profit_margin_percentage: number;
+  tax_percentage: number;
+  regional_factor: number;
+  suggested_price: number;
+  created_at: string;
 };
 
 export default function Pricing() {
@@ -38,6 +50,8 @@ export default function Pricing() {
   });
   const [suggestedPrice, setSuggestedPrice] = useState(0);
   const [profile, setProfile] = useState<any>(null);
+  const [pricingHistory, setPricingHistory] = useState<PricingHistoryItem[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
 
   useEffect(() => {
     checkAuthAndFetch();
@@ -64,6 +78,7 @@ export default function Pricing() {
       fetchRecipes(),
       fetchPricingConfig(session.user.id),
       fetchProfile(session.user.id),
+      fetchPricingHistory(session.user.id),
     ]);
   };
 
@@ -75,6 +90,19 @@ export default function Pricing() {
       .single();
 
     setProfile(data);
+  };
+
+  const fetchPricingHistory = async (userId: string) => {
+    const { data, error } = await supabase
+      .from("pricing_history")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(10);
+
+    if (!error && data) {
+      setPricingHistory(data);
+    }
   };
 
   const fetchRecipes = async () => {
@@ -201,6 +229,47 @@ export default function Pricing() {
     });
   };
 
+  const handleSavePricingToHistory = async () => {
+    if (!selectedRecipeId || recipeCost === 0) {
+      toast({
+        title: "Erro",
+        description: "Selecione uma receita primeiro",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const selectedRecipe = recipes.find(r => r.id === selectedRecipeId);
+    if (!selectedRecipe) return;
+
+    const { error } = await supabase
+      .from("pricing_history")
+      .insert([{
+        user_id: user.id,
+        recipe_id: selectedRecipeId,
+        recipe_name: selectedRecipe.name,
+        recipe_cost: recipeCost,
+        profit_margin_percentage: config.profit_margin_percentage,
+        tax_percentage: config.tax_percentage,
+        regional_factor: config.regional_factor,
+        suggested_price: suggestedPrice,
+      }]);
+
+    if (error) {
+      toast({
+        title: "Erro ao salvar histórico",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({ title: "Precificação salva no histórico!" });
+      fetchPricingHistory(user.id);
+    }
+  };
+
   if (loading) {
     return (
       <Layout>
@@ -229,12 +298,12 @@ export default function Pricing() {
             <CardContent className="pt-6">
               <p className="text-center text-muted-foreground">
                 Você precisa criar fichas técnicas antes de fazer a precificação.
-                <Button
+                 <Button
                   variant="link"
                   onClick={() => navigate("/recipes")}
                   className="ml-2"
                 >
-                  Ir para Fichas Técnicas
+                  Ir para Receitas / Pratos
                 </Button>
               </p>
             </CardContent>
@@ -251,7 +320,7 @@ export default function Pricing() {
           <CardContent>
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label>Escolha a ficha técnica</Label>
+                <Label>Escolha a receita / prato</Label>
                 <Select value={selectedRecipeId} onValueChange={setSelectedRecipeId}>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione uma receita" />
@@ -316,7 +385,16 @@ export default function Pricing() {
               <div className="flex items-start gap-3 mb-4">
                 <MapPin className="h-5 w-5 text-accent mt-0.5" />
                 <div className="flex-1">
-                  <h4 className="font-semibold mb-1">Fator Regional</h4>
+                  <div className="flex items-center gap-2 mb-3">
+                    <h4 className="font-semibold">Fator Regional</h4>
+                    <Badge variant="outline" className="gap-1">
+                      <Info className="h-3 w-3" />
+                      Ajuste por localização
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    O fator regional ajusta o preço com base no poder aquisitivo da região onde seu estabelecimento está localizado.
+                  </p>
                   {profile?.plan === "free" ? (
                     <div>
                       <Badge variant="secondary" className="mb-2">
@@ -328,7 +406,7 @@ export default function Pricing() {
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      <div className="space-y-2">
+                      <div className="space-y-3">
                         <Label>Nível de Renda da Região</Label>
                         <Select value={config.income_level} onValueChange={handleIncomeChange}>
                           <SelectTrigger>
@@ -336,16 +414,39 @@ export default function Pricing() {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="low">
-                              Baixa Renda (Fator 0.90)
+                              <div className="flex items-center gap-2">
+                                Baixa Renda
+                                <Badge variant="secondary">0.90x</Badge>
+                              </div>
                             </SelectItem>
                             <SelectItem value="medium">
-                              Média Renda (Fator 1.10)
+                              <div className="flex items-center gap-2">
+                                Média Renda
+                                <Badge variant="secondary">1.10x</Badge>
+                              </div>
                             </SelectItem>
                             <SelectItem value="high">
-                              Alta Renda (Fator 1.25)
+                              <div className="flex items-center gap-2">
+                                Alta Renda
+                                <Badge variant="secondary">1.25x</Badge>
+                              </div>
                             </SelectItem>
                           </SelectContent>
                         </Select>
+                        <div className="flex gap-2 flex-wrap">
+                          <Badge variant="outline" className="text-xs">
+                            <Info className="h-3 w-3 mr-1" />
+                            Baixa: reduz preço em 10%
+                          </Badge>
+                          <Badge variant="outline" className="text-xs">
+                            <Info className="h-3 w-3 mr-1" />
+                            Média: aumenta 10%
+                          </Badge>
+                          <Badge variant="outline" className="text-xs">
+                            <Info className="h-3 w-3 mr-1" />
+                            Alta: aumenta 25%
+                          </Badge>
+                        </div>
                       </div>
                       <div className="space-y-2">
                         <Label>Fator Regional (ajuste manual)</Label>
@@ -416,7 +517,7 @@ export default function Pricing() {
                   </div>
                 </div>
 
-                <div className="p-3 bg-success/10 border border-success/20 rounded-lg">
+                 <div className="p-3 bg-success/10 border border-success/20 rounded-lg">
                   <p className="text-sm text-center">
                     <span className="font-semibold">Lucro por venda:</span>{" "}
                     <span className="text-success font-bold">
@@ -425,10 +526,85 @@ export default function Pricing() {
                     {" "}({((profitAmount / recipeCost) * 100).toFixed(1)}%)
                   </p>
                 </div>
+
+                <Button onClick={handleSavePricingToHistory} className="w-full gap-2">
+                  <Save className="h-4 w-4" />
+                  Salvar no Histórico
+                </Button>
               </div>
             </CardContent>
           </Card>
         )}
+
+        <Card>
+          <CardHeader>
+            <div className="flex justify-between items-center">
+              <CardTitle className="flex items-center gap-2">
+                <History className="h-5 w-5" />
+                Histórico de Precificações
+              </CardTitle>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowHistory(!showHistory)}
+              >
+                {showHistory ? "Ocultar" : "Mostrar"}
+              </Button>
+            </div>
+          </CardHeader>
+          {showHistory && (
+            <CardContent>
+              {pricingHistory.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">
+                  Nenhuma precificação salva ainda
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {pricingHistory.map((item) => (
+                    <div
+                      key={item.id}
+                      className="p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <h4 className="font-semibold">{item.recipe_name}</h4>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(item.created_at).toLocaleDateString("pt-BR", {
+                              day: "2-digit",
+                              month: "2-digit",
+                              year: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-lg font-bold text-primary">
+                            R$ {Number(item.suggested_price).toFixed(2)}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Custo: R$ {Number(item.recipe_cost).toFixed(2)}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2 flex-wrap">
+                        <Badge variant="secondary" className="text-xs">
+                          Lucro: {Number(item.profit_margin_percentage)}%
+                        </Badge>
+                        <Badge variant="secondary" className="text-xs">
+                          Imposto: {Number(item.tax_percentage)}%
+                        </Badge>
+                        <Badge variant="secondary" className="text-xs">
+                          Fator: {Number(item.regional_factor)}x
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          )}
+        </Card>
       </div>
     </Layout>
   );

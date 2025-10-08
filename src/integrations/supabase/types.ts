@@ -80,6 +80,45 @@ export type Database = {
         }
         Relationships: []
       }
+      pricing_history: {
+        Row: {
+          created_at: string
+          id: string
+          profit_margin_percentage: number
+          recipe_cost: number
+          recipe_id: string
+          recipe_name: string
+          regional_factor: number
+          suggested_price: number
+          tax_percentage: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          profit_margin_percentage: number
+          recipe_cost: number
+          recipe_id: string
+          recipe_name: string
+          regional_factor: number
+          suggested_price: number
+          tax_percentage: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          profit_margin_percentage?: number
+          recipe_cost?: number
+          recipe_id?: string
+          recipe_name?: string
+          regional_factor?: number
+          suggested_price?: number
+          tax_percentage?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string | null
