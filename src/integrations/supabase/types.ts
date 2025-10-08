@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      categories: {
+        Row: {
+          color: string | null
+          created_at: string
+          icon: string | null
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          icon?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          icon?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ingredients: {
         Row: {
           created_at: string | null
@@ -193,6 +223,7 @@ export type Database = {
       }
       recipes: {
         Row: {
+          category_id: string | null
           created_at: string | null
           id: string
           name: string
@@ -203,6 +234,7 @@ export type Database = {
           waste_percentage: number | null
         }
         Insert: {
+          category_id?: string | null
           created_at?: string | null
           id?: string
           name: string
@@ -213,6 +245,7 @@ export type Database = {
           waste_percentage?: number | null
         }
         Update: {
+          category_id?: string | null
           created_at?: string | null
           id?: string
           name?: string
@@ -222,7 +255,15 @@ export type Database = {
           user_id?: string
           waste_percentage?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "recipes_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

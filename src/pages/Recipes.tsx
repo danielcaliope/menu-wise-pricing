@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { Plus, Pencil, Trash2, ChefHat } from "lucide-react";
 import { z } from "zod";
@@ -44,6 +45,7 @@ type Recipe = {
   waste_percentage: number;
   prep_time_minutes: number;
   notes: string | null;
+  category_id: string | null;
 };
 
 type Ingredient = {
@@ -53,21 +55,31 @@ type Ingredient = {
   unit_cost: number;
 };
 
+type Category = {
+  id: string;
+  name: string;
+  icon: string | null;
+  color: string | null;
+};
+
 export default function Recipes() {
   const navigate = useNavigate();
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [ingredientsDialogOpen, setIngredientsDialogOpen] = useState(false);
   const [selectedRecipeId, setSelectedRecipeId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [formData, setFormData] = useState({
     name: "",
     waste_percentage: "0",
     prep_time_minutes: "0",
     notes: "",
+    category_id: "",
   });
 
   useEffect(() => {
@@ -80,7 +92,7 @@ export default function Recipes() {
       navigate("/auth");
       return;
     }
-    await Promise.all([fetchRecipes(), fetchIngredients()]);
+    await Promise.all([fetchRecipes(), fetchIngredients(), fetchCategories()]);
   };
 
   const fetchRecipes = async () => {
@@ -118,6 +130,23 @@ export default function Recipes() {
     }
   };
 
+  const fetchCategories = async () => {
+    const { data, error } = await supabase
+      .from("categories")
+      .select("*")
+      .order("name");
+
+    if (error) {
+      toast({
+        title: "Erro ao carregar categorias",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      setCategories(data || []);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -129,18 +158,18 @@ export default function Recipes() {
         notes: formData.notes || null,
       });
 
+      const recipeData = {
+        ...validated,
+        category_id: formData.category_id || null,
+      };
+
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
       if (editingId) {
         const { error } = await supabase
           .from("recipes")
-          .update({
-            name: validated.name,
-            waste_percentage: validated.waste_percentage,
-            prep_time_minutes: validated.prep_time_minutes,
-            notes: validated.notes || null,
-          })
+          .update(recipeData)
           .eq("id", editingId);
 
         if (error) throw error;
@@ -148,12 +177,13 @@ export default function Recipes() {
       } else {
         const { data, error } = await supabase
           .from("recipes")
-          .insert([{
+          .insert([{ 
             name: validated.name,
             waste_percentage: validated.waste_percentage,
             prep_time_minutes: validated.prep_time_minutes,
-            notes: validated.notes || null,
-            user_id: user.id,
+            notes: validated.notes,
+            category_id: formData.category_id || null,
+            user_id: user.id 
           }])
           .select()
           .single();
@@ -193,6 +223,7 @@ export default function Recipes() {
       waste_percentage: recipe.waste_percentage.toString(),
       prep_time_minutes: recipe.prep_time_minutes.toString(),
       notes: recipe.notes || "",
+      category_id: recipe.category_id || "",
     });
     setDialogOpen(true);
   };
@@ -220,15 +251,17 @@ export default function Recipes() {
   };
 
   const resetForm = () => {
-    setFormData({ name: "", waste_percentage: "0", prep_time_minutes: "0", notes: "" });
+    setFormData({ name: "", waste_percentage: "0", prep_time_minutes: "0", notes: "", category_id: "" });
     setEditingId(null);
   };
 
-  // Filter recipes based on search query
-  const filteredRecipes = recipes.filter(recipe =>
-    recipe.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    recipe.notes?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Filter recipes based on search query and category
+  const filteredRecipes = recipes.filter(recipe => {
+    const matchesSearch = recipe.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      recipe.notes?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = selectedCategory === "all" || recipe.category_id === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
 
   if (loading) {
     return (
@@ -314,6 +347,25 @@ export default function Recipes() {
                   </div>
                 </div>
                 <div className="space-y-2">
+                  <Label htmlFor="category">Categoria</Label>
+                  <Select
+                    value={formData.category_id}
+                    onValueChange={(value) => setFormData({ ...formData, category_id: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione uma categoria" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Sem categoria</SelectItem>
+                      {categories.map((cat) => (
+                        <SelectItem key={cat.id} value={cat.id}>
+                          {cat.icon} {cat.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="notes">Observações</Label>
                   <Textarea
                     id="notes"
@@ -353,12 +405,27 @@ export default function Recipes() {
           <CardHeader>
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <CardTitle>Lista de Receitas / Pratos</CardTitle>
-              <SearchBar
-                value={searchQuery}
-                onChange={setSearchQuery}
-                placeholder="Buscar receita..."
-                className="w-full sm:w-72"
-              />
+              <div className="flex gap-2 w-full sm:w-auto">
+                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                  <SelectTrigger className="w-full sm:w-48">
+                    <SelectValue placeholder="Todas as categorias" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas as categorias</SelectItem>
+                    {categories.map((cat) => (
+                      <SelectItem key={cat.id} value={cat.id}>
+                        {cat.icon} {cat.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <SearchBar
+                  value={searchQuery}
+                  onChange={setSearchQuery}
+                  placeholder="Buscar receita..."
+                  className="w-full sm:w-72"
+                />
+              </div>
             </div>
           </CardHeader>
           <CardContent>
@@ -383,21 +450,39 @@ export default function Recipes() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Nome</TableHead>
+                    <TableHead>Categoria</TableHead>
                     <TableHead>% Desperdício</TableHead>
                     <TableHead>Tempo Preparo</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredRecipes.map((recipe) => (
-                    <TableRow key={recipe.id}>
-                      <TableCell className="font-medium">{recipe.name}</TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">
-                          {recipe.waste_percentage}%
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{recipe.prep_time_minutes} min</TableCell>
+                  {filteredRecipes.map((recipe) => {
+                    const category = categories.find(c => c.id === recipe.category_id);
+                    return (
+                      <TableRow key={recipe.id}>
+                        <TableCell className="font-medium">{recipe.name}</TableCell>
+                        <TableCell>
+                          {category ? (
+                            <Badge 
+                              variant="secondary"
+                              style={{ 
+                                backgroundColor: category.color || "#3b82f6",
+                                color: "white"
+                              }}
+                            >
+                              {category.icon} {category.name}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground text-sm">Sem categoria</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="secondary">
+                            {recipe.waste_percentage}%
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{recipe.prep_time_minutes} min</TableCell>
                       <TableCell className="text-right">
                         <div className="flex gap-2 justify-end">
                           <Button
@@ -424,7 +509,8 @@ export default function Recipes() {
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))}
+                  );
+                  })}
                 </TableBody>
               </Table>
             )}
