@@ -44,6 +44,75 @@ export type Database = {
         }
         Relationships: []
       }
+      cost_alert_history: {
+        Row: {
+          alert_type: string
+          id: string
+          is_read: boolean
+          new_value: number
+          old_value: number
+          percentage_change: number
+          reference_id: string
+          reference_name: string
+          triggered_at: string
+          user_id: string
+        }
+        Insert: {
+          alert_type: string
+          id?: string
+          is_read?: boolean
+          new_value: number
+          old_value: number
+          percentage_change: number
+          reference_id: string
+          reference_name: string
+          triggered_at?: string
+          user_id: string
+        }
+        Update: {
+          alert_type?: string
+          id?: string
+          is_read?: boolean
+          new_value?: number
+          old_value?: number
+          percentage_change?: number
+          reference_id?: string
+          reference_name?: string
+          triggered_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      cost_alerts: {
+        Row: {
+          alert_type: string
+          created_at: string
+          enabled: boolean
+          id: string
+          threshold_percentage: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          alert_type: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          threshold_percentage?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          alert_type?: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          threshold_percentage?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ingredient_stock: {
         Row: {
           created_at: string
