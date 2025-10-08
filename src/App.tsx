@@ -15,6 +15,7 @@ import CostAlerts from "./pages/CostAlerts";
 import CompetitiveAnalysis from "./pages/CompetitiveAnalysis";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
+import Menu from "./pages/Menu";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -39,6 +40,7 @@ const App = () => (
           <Route path="/competitive-analysis" element={<CompetitiveAnalysis />} />
           <Route path="/reports" element={<Reports />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/menu" element={<Menu />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
