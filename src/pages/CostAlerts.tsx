@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { Layout } from "@/components/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -159,14 +160,17 @@ const CostAlerts = () => {
 
   if (alertsLoading || historyLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">Carregando alertas...</p>
-      </div>
+      <Layout>
+        <div className="flex items-center justify-center h-64">
+          <p className="text-muted-foreground">Carregando alertas...</p>
+        </div>
+      </Layout>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <Layout>
+      <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Alertas de Custos</h1>
         <p className="text-muted-foreground mt-2">
@@ -217,7 +221,7 @@ const CostAlerts = () => {
                   </div>
                 </div>
 
-                {(config?.enabled || isEditing) && (
+                {config?.enabled && (
                   <div className="ml-8 flex items-end gap-2">
                     <div className="flex-1 max-w-xs">
                       <Label htmlFor={`threshold-${alertType.type}`}>
@@ -313,7 +317,8 @@ const CostAlerts = () => {
           )}
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </Layout>
   );
 };
 
