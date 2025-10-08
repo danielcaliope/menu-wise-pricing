@@ -10,8 +10,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Package } from "lucide-react";
 import { z } from "zod";
+import { SearchBar } from "@/components/SearchBar";
+import { EmptyState } from "@/components/EmptyState";
+import { TableSkeleton } from "@/components/SkeletonLoader";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 // Validação de segurança para prevenir injection attacks
 const ingredientSchema = z.object({
@@ -50,6 +59,7 @@ export default function Ingredients() {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const [formData, setFormData] = useState({
     name: "",
     unit: "g",
@@ -212,11 +222,22 @@ export default function Ingredients() {
     setEditingId(null);
   };
 
+  // Filter ingredients based on search query
+  const filteredIngredients = ingredients.filter(ingredient =>
+    ingredient.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    ingredient.supplier?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   if (loading) {
     return (
       <Layout>
-        <div className="flex items-center justify-center h-full">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="space-y-6 animate-fade-in">
+          <Breadcrumbs items={[{ label: "Ingredientes" }]} />
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Ingredientes</h1>
+            <p className="text-muted-foreground">Carregando...</p>
+          </div>
+          <TableSkeleton rows={5} />
         </div>
       </Layout>
     );
@@ -225,7 +246,9 @@ export default function Ingredients() {
   return (
     <Layout>
       <div className="space-y-6 animate-fade-in">
-        <div className="flex justify-between items-center">
+        <Breadcrumbs items={[{ label: "Ingredientes" }]} />
+        
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-3xl font-bold mb-2">Ingredientes</h1>
             <p className="text-muted-foreground">
@@ -250,7 +273,17 @@ export default function Ingredients() {
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Nome</Label>
+                  <Label htmlFor="name">
+                    Nome
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="ml-1 text-muted-foreground cursor-help">ℹ️</span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Nome do ingrediente (ex: Farinha de Trigo)</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </Label>
                   <Input
                     id="name"
                     value={formData.name}
@@ -261,7 +294,17 @@ export default function Ingredients() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="unit">Unidade</Label>
+                  <Label htmlFor="unit">
+                    Unidade
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="ml-1 text-muted-foreground cursor-help">ℹ️</span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Unidade de medida padrão</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </Label>
                   <Select
                     value={formData.unit}
                     onValueChange={(value) => setFormData({ ...formData, unit: value })}
@@ -280,7 +323,17 @@ export default function Ingredients() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="cost">Custo Unitário (R$)</Label>
+                  <Label htmlFor="cost">
+                    Custo Unitário (R$)
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="ml-1 text-muted-foreground cursor-help">ℹ️</span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Custo por unidade de medida (ex: R$ por kg)</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </Label>
                   <Input
                     id="cost"
                     type="number"
@@ -312,13 +365,33 @@ export default function Ingredients() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Lista de Ingredientes</CardTitle>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <CardTitle>Lista de Ingredientes</CardTitle>
+              <SearchBar
+                value={searchQuery}
+                onChange={setSearchQuery}
+                placeholder="Buscar ingrediente..."
+                className="w-full sm:w-72"
+              />
+            </div>
           </CardHeader>
           <CardContent>
             {ingredients.length === 0 ? (
-              <p className="text-center text-muted-foreground py-8">
-                Nenhum ingrediente cadastrado ainda
-              </p>
+              <EmptyState
+                icon={Package}
+                title="Nenhum ingrediente cadastrado"
+                description="Comece cadastrando os ingredientes que você usa nas suas receitas para calcular custos e preços."
+                actionLabel="Cadastrar Primeiro Ingrediente"
+                onAction={() => setDialogOpen(true)}
+              />
+            ) : filteredIngredients.length === 0 ? (
+              <EmptyState
+                icon={Package}
+                title="Nenhum resultado encontrado"
+                description={`Não encontramos ingredientes com "${searchQuery}"`}
+                actionLabel="Limpar Busca"
+                onAction={() => setSearchQuery("")}
+              />
             ) : (
               <Table>
                 <TableHeader>
@@ -331,7 +404,7 @@ export default function Ingredients() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {ingredients.map((ingredient) => (
+                  {filteredIngredients.map((ingredient) => (
                     <TableRow key={ingredient.id}>
                       <TableCell className="font-medium">{ingredient.name}</TableCell>
                       <TableCell>{ingredient.unit}</TableCell>
