@@ -12,6 +12,7 @@ export default function Dashboard() {
     recipes: 0,
     avgCost: 0,
   });
+  const [userName, setUserName] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -22,16 +23,40 @@ export default function Dashboard() {
         return;
       }
 
+      // Fetch user profile
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", session.user.id)
+        .single();
+
+      if (profileData) {
+        setUserName(profileData.full_name || "");
+      }
+
       // Fetch statistics
-      const [ingredientsRes, recipesRes] = await Promise.all([
+      const [ingredientsRes, recipesRes, recipeIngredientsRes] = await Promise.all([
         supabase.from("ingredients").select("*", { count: "exact", head: true }),
         supabase.from("recipes").select("*", { count: "exact", head: true }),
+        supabase.from("recipe_ingredients").select(`
+          quantity,
+          ingredients (unit_cost)
+        `),
       ]);
+
+      // Calculate average cost
+      let avgCost = 0;
+      if (recipeIngredientsRes.data && recipeIngredientsRes.data.length > 0) {
+        const totalCosts = (recipeIngredientsRes.data as any[]).reduce((sum, ri) => {
+          return sum + (ri.quantity * ri.ingredients.unit_cost);
+        }, 0);
+        avgCost = totalCosts / (recipesRes.count || 1);
+      }
 
       setStats({
         ingredients: ingredientsRes.count || 0,
         recipes: recipesRes.count || 0,
-        avgCost: 0,
+        avgCost: avgCost,
       });
       setLoading(false);
     };
@@ -80,7 +105,9 @@ export default function Dashboard() {
     <Layout>
       <div className="space-y-6 animate-fade-in">
         <div>
-          <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
+          <h1 className="text-3xl font-bold mb-2">
+            Dashboard {userName && `- Olá, ${userName}!`}
+          </h1>
           <p className="text-muted-foreground">
             Visão geral do seu sistema de precificação
           </p>
