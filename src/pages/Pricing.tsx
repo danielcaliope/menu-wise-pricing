@@ -10,6 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { Calculator, TrendingUp, MapPin, DollarSign, History, Save, Info } from "lucide-react";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { StatsSkeleton } from "@/components/SkeletonLoader";
 
 type Recipe = {
   id: string;
@@ -273,8 +275,13 @@ export default function Pricing() {
   if (loading) {
     return (
       <Layout>
-        <div className="flex items-center justify-center h-full">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="space-y-6 animate-fade-in">
+          <Breadcrumbs items={[{ label: "Precificação" }]} />
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Precificação Inteligente</h1>
+            <p className="text-muted-foreground">Carregando...</p>
+          </div>
+          <StatsSkeleton />
         </div>
       </Layout>
     );
@@ -286,6 +293,8 @@ export default function Pricing() {
   return (
     <Layout>
       <div className="space-y-6 animate-fade-in max-w-4xl">
+        <Breadcrumbs items={[{ label: "Precificação" }]} />
+        
         <div>
           <h1 className="text-3xl font-bold mb-2">Precificação Inteligente</h1>
           <p className="text-muted-foreground">

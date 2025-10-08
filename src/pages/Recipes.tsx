@@ -14,6 +14,10 @@ import { toast } from "@/hooks/use-toast";
 import { Plus, Pencil, Trash2, ChefHat } from "lucide-react";
 import { z } from "zod";
 import { RecipeIngredientsDialog } from "@/components/RecipeIngredientsDialog";
+import { SearchBar } from "@/components/SearchBar";
+import { EmptyState } from "@/components/EmptyState";
+import { TableSkeleton } from "@/components/SkeletonLoader";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 // Validação de segurança para prevenir injection attacks
 const recipeSchema = z.object({
@@ -58,6 +62,7 @@ export default function Recipes() {
   const [ingredientsDialogOpen, setIngredientsDialogOpen] = useState(false);
   const [selectedRecipeId, setSelectedRecipeId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const [formData, setFormData] = useState({
     name: "",
     waste_percentage: "0",
@@ -219,11 +224,22 @@ export default function Recipes() {
     setEditingId(null);
   };
 
+  // Filter recipes based on search query
+  const filteredRecipes = recipes.filter(recipe =>
+    recipe.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    recipe.notes?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   if (loading) {
     return (
       <Layout>
-        <div className="flex items-center justify-center h-full">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="space-y-6 animate-fade-in">
+          <Breadcrumbs items={[{ label: "Receitas / Pratos" }]} />
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Receitas / Pratos</h1>
+            <p className="text-muted-foreground">Carregando...</p>
+          </div>
+          <TableSkeleton rows={5} />
         </div>
       </Layout>
     );
@@ -232,7 +248,9 @@ export default function Recipes() {
   return (
     <Layout>
       <div className="space-y-6 animate-fade-in">
-        <div className="flex justify-between items-center">
+        <Breadcrumbs items={[{ label: "Receitas / Pratos" }]} />
+        
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-3xl font-bold mb-2">Receitas / Pratos</h1>
             <p className="text-muted-foreground">
@@ -333,16 +351,33 @@ export default function Recipes() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Lista de Receitas / Pratos</CardTitle>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <CardTitle>Lista de Receitas / Pratos</CardTitle>
+              <SearchBar
+                value={searchQuery}
+                onChange={setSearchQuery}
+                placeholder="Buscar receita..."
+                className="w-full sm:w-72"
+              />
+            </div>
           </CardHeader>
           <CardContent>
             {recipes.length === 0 ? (
-              <div className="text-center py-12">
-                <ChefHat className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-                <p className="text-muted-foreground">
-                  Nenhuma receita criada ainda
-                </p>
-              </div>
+              <EmptyState
+                icon={ChefHat}
+                title="Nenhuma receita criada"
+                description="Crie sua primeira receita combinando ingredientes e definindo quantidades."
+                actionLabel="Criar Primeira Receita"
+                onAction={() => setDialogOpen(true)}
+              />
+            ) : filteredRecipes.length === 0 ? (
+              <EmptyState
+                icon={ChefHat}
+                title="Nenhum resultado encontrado"
+                description={`Não encontramos receitas com "${searchQuery}"`}
+                actionLabel="Limpar Busca"
+                onAction={() => setSearchQuery("")}
+              />
             ) : (
               <Table>
                 <TableHeader>
@@ -354,7 +389,7 @@ export default function Recipes() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {recipes.map((recipe) => (
+                  {filteredRecipes.map((recipe) => (
                     <TableRow key={recipe.id}>
                       <TableCell className="font-medium">{recipe.name}</TableCell>
                       <TableCell>

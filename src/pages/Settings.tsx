@@ -9,6 +9,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { z } from "zod";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { StatsSkeleton } from "@/components/SkeletonLoader";
 
 // Validação de segurança para prevenir SQL injection e code injection
 const profileSchema = z.object({
@@ -157,8 +159,9 @@ export default function Settings() {
   if (loading) {
     return (
       <Layout>
-        <div className="flex items-center justify-center h-full">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="space-y-6 animate-fade-in">
+          <Breadcrumbs items={[{ label: "Configurações" }]} />
+          <StatsSkeleton />
         </div>
       </Layout>
     );
@@ -167,6 +170,8 @@ export default function Settings() {
   return (
     <Layout>
       <div className="space-y-6 animate-fade-in max-w-2xl">
+        <Breadcrumbs items={[{ label: "Configurações" }]} />
+        
         <div>
           <h1 className="text-3xl font-bold mb-2">Configurações</h1>
           <p className="text-muted-foreground">
