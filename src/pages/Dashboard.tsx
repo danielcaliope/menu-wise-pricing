@@ -4,16 +4,21 @@ import { supabase } from "@/integrations/supabase/client";
 import { Layout } from "@/components/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Package, ChefHat, DollarSign, TrendingUp, PieChart as PieChartIcon } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Package, ChefHat, DollarSign, TrendingUp, PieChart as PieChartIcon, AlertTriangle, Bell } from "lucide-react";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { StatsSkeleton } from "@/components/SkeletonLoader";
 import { LineChart, Line, BarChart, Bar, PieChart as RePieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 type Stats = {
   totalIngredients: number;
   totalRecipes: number;
   averageCost: number;
   totalPricings: number;
+  lowStockCount: number;
+  unreadAlerts: number;
 };
 
 export default function Dashboard() {
@@ -25,9 +30,12 @@ export default function Dashboard() {
     totalRecipes: 0,
     averageCost: 0,
     totalPricings: 0,
+    lowStockCount: 0,
+    unreadAlerts: 0,
   });
   const [topRecipes, setTopRecipes] = useState<any[]>([]);
   const [costTrends, setCostTrends] = useState<any[]>([]);
+  const [recentAlerts, setRecentAlerts] = useState<any[]>([]);
 
   useEffect(() => {
     checkAuthAndFetch();
@@ -45,6 +53,7 @@ export default function Dashboard() {
       fetchDashboardStats(session.user.id),
       fetchTopRecipes(session.user.id),
       fetchCostTrends(session.user.id),
+      fetchRecentAlerts(session.user.id),
     ]);
     setLoading(false);
   };
@@ -90,11 +99,28 @@ export default function Dashboard() {
       ? ingredients.reduce((sum, ing) => sum + Number(ing.unit_cost), 0) / ingredients.length
       : 0;
 
+    // Count low stock items
+    const { data: stock } = await supabase
+      .from("ingredient_stock")
+      .select("current_quantity, min_quantity")
+      .eq("user_id", userId);
+    
+    const lowStock = stock?.filter(s => s.current_quantity <= s.min_quantity).length || 0;
+
+    // Count unread alerts
+    const { count: unreadCount } = await supabase
+      .from("cost_alert_history")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .eq("is_read", false);
+
     setStats({
       totalIngredients: ingredientsCount || 0,
       totalRecipes: recipesCount || 0,
       averageCost: avgCost,
       totalPricings: pricingsCount || 0,
+      lowStockCount: lowStock,
+      unreadAlerts: unreadCount || 0,
     });
   };
 
@@ -133,6 +159,19 @@ export default function Dashboard() {
           cost: Number(ing.unit_cost),
         }))
       );
+    }
+  };
+
+  const fetchRecentAlerts = async (userId: string) => {
+    const { data } = await supabase
+      .from("cost_alert_history")
+      .select("*")
+      .eq("user_id", userId)
+      .order("triggered_at", { ascending: false })
+      .limit(5);
+
+    if (data) {
+      setRecentAlerts(data);
     }
   };
 
@@ -226,7 +265,90 @@ export default function Dashboard() {
               </p>
             </CardContent>
           </Card>
+
+          <Card className="hover-scale">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Itens em Falta
+              </CardTitle>
+              <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.lowStockCount}</div>
+              <p className="text-xs text-muted-foreground">
+                Estoque abaixo do mínimo
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="hover-scale">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Alertas Novos
+              </CardTitle>
+              <Bell className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.unreadAlerts}</div>
+              <p className="text-xs text-muted-foreground">
+                Não lidos
+              </p>
+            </CardContent>
+          </Card>
         </div>
+
+        {/* Recent Alerts */}
+        {recentAlerts.length > 0 && (
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Bell className="h-5 w-5" />
+                    Alertas Recentes
+                  </CardTitle>
+                  <CardDescription>
+                    Últimas notificações de variação de custos
+                  </CardDescription>
+                </div>
+                <Button onClick={() => navigate("/cost-alerts")} variant="outline" size="sm">
+                  Ver Todos
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {recentAlerts.map((alert) => (
+                  <div
+                    key={alert.id}
+                    className={`flex items-start justify-between p-3 rounded-lg border ${
+                      alert.is_read ? 'bg-background' : 'bg-muted/50'
+                    }`}
+                  >
+                    <div className="space-y-1 flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-sm">{alert.reference_name}</p>
+                        <Badge
+                          variant={alert.percentage_change > 0 ? "destructive" : "default"}
+                          className="text-xs"
+                        >
+                          {alert.percentage_change > 0 ? '+' : ''}
+                          {alert.percentage_change.toFixed(1)}%
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        De R$ {Number(alert.old_value).toFixed(2)} para R$ {Number(alert.new_value).toFixed(2)}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {format(new Date(alert.triggered_at), "PPp", { locale: ptBR })}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Charts Row */}
         <div className="grid gap-4 md:grid-cols-2">
