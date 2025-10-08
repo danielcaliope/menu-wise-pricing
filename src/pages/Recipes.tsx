@@ -12,9 +12,10 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2, ChefHat } from "lucide-react";
+import { Plus, Pencil, Trash2, ChefHat, Calculator } from "lucide-react";
 import { z } from "zod";
 import { RecipeIngredientsDialog } from "@/components/RecipeIngredientsDialog";
+import { PortionCalculator } from "@/components/PortionCalculator";
 import { SearchBar } from "@/components/SearchBar";
 import { EmptyState } from "@/components/EmptyState";
 import { TableSkeleton } from "@/components/SkeletonLoader";
@@ -46,6 +47,7 @@ type Recipe = {
   prep_time_minutes: number;
   notes: string | null;
   category_id: string | null;
+  default_servings: number;
 };
 
 type Ingredient = {
@@ -70,7 +72,9 @@ export default function Recipes() {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [ingredientsDialogOpen, setIngredientsDialogOpen] = useState(false);
+  const [portionCalculatorOpen, setPortionCalculatorOpen] = useState(false);
   const [selectedRecipeId, setSelectedRecipeId] = useState<string | null>(null);
+  const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
@@ -80,6 +84,7 @@ export default function Recipes() {
     prep_time_minutes: "0",
     notes: "",
     category_id: "",
+    default_servings: "1",
   });
 
   useEffect(() => {
@@ -161,6 +166,7 @@ export default function Recipes() {
       const recipeData = {
         ...validated,
         category_id: formData.category_id || null,
+        default_servings: parseInt(formData.default_servings),
       };
 
       const { data: { user } } = await supabase.auth.getUser();
@@ -183,6 +189,7 @@ export default function Recipes() {
             prep_time_minutes: validated.prep_time_minutes,
             notes: validated.notes,
             category_id: formData.category_id || null,
+            default_servings: parseInt(formData.default_servings),
             user_id: user.id 
           }])
           .select()
@@ -224,6 +231,7 @@ export default function Recipes() {
       prep_time_minutes: recipe.prep_time_minutes.toString(),
       notes: recipe.notes || "",
       category_id: recipe.category_id || "",
+      default_servings: recipe.default_servings.toString(),
     });
     setDialogOpen(true);
   };
@@ -250,8 +258,13 @@ export default function Recipes() {
     setIngredientsDialogOpen(true);
   };
 
+  const handlePortionCalculator = (recipe: Recipe) => {
+    setSelectedRecipe(recipe);
+    setPortionCalculatorOpen(true);
+  };
+
   const resetForm = () => {
-    setFormData({ name: "", waste_percentage: "0", prep_time_minutes: "0", notes: "", category_id: "" });
+    setFormData({ name: "", waste_percentage: "0", prep_time_minutes: "0", notes: "", category_id: "", default_servings: "1" });
     setEditingId(null);
   };
 
@@ -319,7 +332,7 @@ export default function Recipes() {
                     required
                   />
                 </div>
-                <div className="grid gap-4 sm:grid-cols-2">
+                <div className="grid gap-4 sm:grid-cols-3">
                   <div className="space-y-2">
                     <Label htmlFor="waste">% Desperdício</Label>
                     <Input
@@ -342,6 +355,17 @@ export default function Recipes() {
                       max="10000"
                       value={formData.prep_time_minutes}
                       onChange={(e) => setFormData({ ...formData, prep_time_minutes: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="servings">Porções Padrão</Label>
+                    <Input
+                      id="servings"
+                      type="number"
+                      min="1"
+                      value={formData.default_servings}
+                      onChange={(e) => setFormData({ ...formData, default_servings: e.target.value })}
                       required
                     />
                   </div>
@@ -450,6 +474,7 @@ export default function Recipes() {
                   <TableRow>
                     <TableHead>Nome</TableHead>
                     <TableHead>Categoria</TableHead>
+                    <TableHead>Porções</TableHead>
                     <TableHead>% Desperdício</TableHead>
                     <TableHead>Tempo Preparo</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
@@ -477,6 +502,11 @@ export default function Recipes() {
                           )}
                         </TableCell>
                         <TableCell>
+                          <Badge variant="outline">
+                            {recipe.default_servings}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
                           <Badge variant="secondary">
                             {recipe.waste_percentage}%
                           </Badge>
@@ -484,6 +514,14 @@ export default function Recipes() {
                         <TableCell>{recipe.prep_time_minutes} min</TableCell>
                       <TableCell className="text-right">
                         <div className="flex gap-2 justify-end">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handlePortionCalculator(recipe)}
+                          >
+                            <Calculator className="h-4 w-4 mr-1" />
+                            Porções
+                          </Button>
                           <Button
                             variant="outline"
                             size="sm"
@@ -523,6 +561,16 @@ export default function Recipes() {
             open={ingredientsDialogOpen}
             onOpenChange={setIngredientsDialogOpen}
             onUpdate={fetchRecipes}
+          />
+        )}
+
+        {selectedRecipe && (
+          <PortionCalculator
+            recipeId={selectedRecipe.id}
+            recipeName={selectedRecipe.name}
+            defaultServings={selectedRecipe.default_servings}
+            open={portionCalculatorOpen}
+            onOpenChange={setPortionCalculatorOpen}
           />
         )}
       </div>
