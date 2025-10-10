@@ -28,6 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, Trash2, TrendingUp, DollarSign, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
@@ -45,6 +46,9 @@ interface Sale {
   sale_date: string;
   customer_name: string | null;
   notes: string | null;
+  with_delivery: boolean;
+  discount_percentage: number;
+  final_price: number;
 }
 
 interface Recipe {
@@ -60,6 +64,8 @@ const Sales = () => {
   const [customerName, setCustomerName] = useState("");
   const [notes, setNotes] = useState("");
   const [costPerUnit, setCostPerUnit] = useState("0");
+  const [withDelivery, setWithDelivery] = useState(false);
+  const [discountPercentage, setDiscountPercentage] = useState("");
 
   const queryClient = useQueryClient();
 
@@ -72,16 +78,25 @@ const Sales = () => {
   });
 
   const { data: recipes = [] } = useQuery({
-    queryKey: ["recipes", session?.user?.id],
+    queryKey: ["recipes-with-pricing", session?.user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("recipes")
-        .select("id, name")
-        .eq("user_id", session?.user?.id)
-        .order("name");
+      // Buscar apenas receitas que possuem precificação
+      const { data: pricingData, error: pricingError } = await supabase
+        .from("pricing_history")
+        .select("recipe_id, recipe_name")
+        .eq("user_id", session?.user?.id);
       
-      if (error) throw error;
-      return data as Recipe[];
+      if (pricingError) throw pricingError;
+      
+      // Remover duplicatas e criar array de receitas únicas
+      const uniqueRecipes = Array.from(
+        new Map(pricingData.map(item => [item.recipe_id, item])).values()
+      ).map(item => ({
+        id: item.recipe_id,
+        name: item.recipe_name
+      })).sort((a, b) => a.name.localeCompare(b.name));
+      
+      return uniqueRecipes as Recipe[];
     },
     enabled: !!session?.user?.id,
   });
@@ -115,6 +130,9 @@ const Sales = () => {
       profit: number;
       customer_name: string | null;
       notes: string | null;
+      with_delivery: boolean;
+      discount_percentage: number;
+      final_price: number;
     }) => {
       const { data, error } = await supabase
         .from("sales")
@@ -162,6 +180,52 @@ const Sales = () => {
     setCostPerUnit("0");
     setCustomerName("");
     setNotes("");
+    setWithDelivery(false);
+    setDiscountPercentage("");
+  };
+
+  // Buscar preço da receita quando selecionada
+  const handleRecipeSelect = async (recipeId: string) => {
+    setSelectedRecipeId(recipeId);
+    
+    // Buscar a última precificação dessa receita
+    const { data, error } = await supabase
+      .from("pricing_history")
+      .select("*")
+      .eq("user_id", session?.user?.id)
+      .eq("recipe_id", recipeId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single();
+    
+    if (!error && data) {
+      setCostPerUnit(data.recipe_cost.toString());
+      // Definir o preço com base em delivery ou não
+      setUnitPrice(data.price_without_delivery?.toString() || data.suggested_price.toString());
+    }
+  };
+
+  // Atualizar preço quando mudar delivery
+  const handleDeliveryChange = async (checked: boolean) => {
+    setWithDelivery(checked);
+    
+    if (selectedRecipeId) {
+      const { data, error } = await supabase
+        .from("pricing_history")
+        .select("*")
+        .eq("user_id", session?.user?.id)
+        .eq("recipe_id", selectedRecipeId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single();
+      
+      if (!error && data) {
+        const price = checked 
+          ? (data.price_with_delivery || data.suggested_price)
+          : (data.price_without_delivery || data.suggested_price);
+        setUnitPrice(price.toString());
+      }
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -170,9 +234,14 @@ const Sales = () => {
     const qty = parseInt(quantity);
     const price = parseFloat(unitPrice);
     const cost = parseFloat(costPerUnit);
+    const discount = discountPercentage ? parseFloat(discountPercentage) : 0;
+    
+    // Calcular preço com desconto
+    const priceAfterDiscount = price * (1 - discount / 100);
     const totalAmount = qty * price;
+    const finalPrice = qty * priceAfterDiscount;
     const totalCost = qty * cost;
-    const profit = totalAmount - totalCost;
+    const profit = finalPrice - totalCost;
 
     createSale.mutate({
       recipe_id: selectedRecipeId,
@@ -184,10 +253,13 @@ const Sales = () => {
       profit: profit,
       customer_name: customerName || null,
       notes: notes || null,
+      with_delivery: withDelivery,
+      discount_percentage: discount,
+      final_price: finalPrice,
     });
   };
 
-  const totalSales = sales.reduce((sum, sale) => sum + parseFloat(String(sale.total_amount)), 0);
+  const totalSales = sales.reduce((sum, sale) => sum + parseFloat(String(sale.final_price || sale.total_amount)), 0);
   const totalProfit = sales.reduce((sum, sale) => sum + parseFloat(String(sale.profit)), 0);
   const totalQuantity = sales.reduce((sum, sale) => sum + sale.quantity, 0);
 
@@ -214,10 +286,10 @@ const Sales = () => {
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="recipe">Receita *</Label>
+                  <Label htmlFor="recipe">Receita * (apenas com precificação)</Label>
                   <Select
                     value={selectedRecipeId}
-                    onValueChange={setSelectedRecipeId}
+                    onValueChange={handleRecipeSelect}
                     required
                   >
                     <SelectTrigger>
@@ -268,6 +340,33 @@ const Sales = () => {
                     value={costPerUnit}
                     onChange={(e) => setCostPerUnit(e.target.value)}
                     required
+                    readOnly
+                    className="bg-muted"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="withDelivery" className="cursor-pointer">
+                    Venda com delivery
+                  </Label>
+                  <Switch
+                    id="withDelivery"
+                    checked={withDelivery}
+                    onCheckedChange={handleDeliveryChange}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="discount">Desconto (%)</Label>
+                  <Input
+                    id="discount"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="100"
+                    value={discountPercentage}
+                    onChange={(e) => setDiscountPercentage(e.target.value)}
+                    placeholder="Opcional"
                   />
                 </div>
 
@@ -350,9 +449,11 @@ const Sales = () => {
                   <TableHead>Receita</TableHead>
                   <TableHead>Cliente</TableHead>
                   <TableHead className="text-right">Qtd</TableHead>
-                  <TableHead className="text-right">Preço Unit.</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
+                  <TableHead className="text-right">Preço</TableHead>
+                  <TableHead className="text-right">Desconto</TableHead>
+                  <TableHead className="text-right">Total Final</TableHead>
                   <TableHead className="text-right">Lucro</TableHead>
+                  <TableHead className="text-center">Delivery</TableHead>
                   <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -369,10 +470,16 @@ const Sales = () => {
                       R$ {parseFloat(sale.unit_price).toFixed(2)}
                     </TableCell>
                     <TableCell className="text-right">
-                      R$ {parseFloat(sale.total_amount).toFixed(2)}
+                      {sale.discount_percentage > 0 ? `${sale.discount_percentage}%` : "-"}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      R$ {parseFloat(sale.final_price || sale.total_amount).toFixed(2)}
                     </TableCell>
                     <TableCell className="text-right">
                       R$ {parseFloat(sale.profit).toFixed(2)}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {sale.with_delivery ? "✓" : "-"}
                     </TableCell>
                     <TableCell>
                       <Button

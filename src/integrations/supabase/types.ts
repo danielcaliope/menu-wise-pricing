@@ -516,6 +516,8 @@ export type Database = {
           cost_per_unit: number
           created_at: string
           customer_name: string | null
+          discount_percentage: number | null
+          final_price: number | null
           id: string
           notes: string | null
           profit: number
@@ -527,11 +529,14 @@ export type Database = {
           unit_price: number
           updated_at: string
           user_id: string
+          with_delivery: boolean
         }
         Insert: {
           cost_per_unit: number
           created_at?: string
           customer_name?: string | null
+          discount_percentage?: number | null
+          final_price?: number | null
           id?: string
           notes?: string | null
           profit: number
@@ -543,11 +548,14 @@ export type Database = {
           unit_price: number
           updated_at?: string
           user_id: string
+          with_delivery?: boolean
         }
         Update: {
           cost_per_unit?: number
           created_at?: string
           customer_name?: string | null
+          discount_percentage?: number | null
+          final_price?: number | null
           id?: string
           notes?: string | null
           profit?: number
@@ -559,8 +567,17 @@ export type Database = {
           unit_price?: number
           updated_at?: string
           user_id?: string
+          with_delivery?: boolean
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "sales_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       stock_movements: {
         Row: {
