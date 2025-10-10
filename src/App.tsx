@@ -19,6 +19,7 @@ import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 import Menu from "./pages/Menu";
 import IndirectCosts from "./pages/IndirectCosts";
+import Sales from "./pages/Sales";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -47,6 +48,7 @@ const App = () => (
           <Route path="/settings" element={<Settings />} />
           <Route path="/menu" element={<Menu />} />
           <Route path="/indirect-costs" element={<IndirectCosts />} />
+          <Route path="/sales" element={<Sales />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

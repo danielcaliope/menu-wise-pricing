@@ -511,6 +511,57 @@ export type Database = {
           },
         ]
       }
+      sales: {
+        Row: {
+          cost_per_unit: number
+          created_at: string
+          customer_name: string | null
+          id: string
+          notes: string | null
+          profit: number
+          quantity: number
+          recipe_id: string
+          sale_date: string
+          total_amount: number
+          total_cost: number
+          unit_price: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cost_per_unit: number
+          created_at?: string
+          customer_name?: string | null
+          id?: string
+          notes?: string | null
+          profit: number
+          quantity?: number
+          recipe_id: string
+          sale_date?: string
+          total_amount: number
+          total_cost: number
+          unit_price: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cost_per_unit?: number
+          created_at?: string
+          customer_name?: string | null
+          id?: string
+          notes?: string | null
+          profit?: number
+          quantity?: number
+          recipe_id?: string
+          sale_date?: string
+          total_amount?: number
+          total_cost?: number
+          unit_price?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       stock_movements: {
         Row: {
           created_at: string
