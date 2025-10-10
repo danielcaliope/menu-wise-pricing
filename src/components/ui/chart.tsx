@@ -65,26 +65,34 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
     return null;
   }
 
-  return (
-    <style
-      dangerouslySetInnerHTML={{
-        __html: Object.entries(THEMES)
-          .map(
-            ([theme, prefix]) => `
-${prefix} [data-chart=${id}] {
-${colorConfig
-  .map(([key, itemConfig]) => {
-    const color = itemConfig.theme?.[theme as keyof typeof itemConfig.theme] || itemConfig.color;
-    return color ? `  --color-${key}: ${color};` : null;
-  })
-  .join("\n")}
-}
-`,
-          )
-          .join("\n"),
-      }}
-    />
-  );
+  // Sanitize color values to prevent XSS
+  const sanitizeColor = (color: string | undefined): string | null => {
+    if (!color) return null;
+    // Only allow valid CSS color formats
+    const validColorRegex = /^(#[0-9A-Fa-f]{3,8}|rgb\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*\)|rgba\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*,\s*[\d.]+\s*\)|hsl\(\s*\d+\s*,\s*\d+%\s*,\s*\d+%\s*\)|hsla\(\s*\d+\s*,\s*\d+%\s*,\s*\d+%\s*,\s*[\d.]+\s*\))$/;
+    return validColorRegex.test(color.trim()) ? color.trim() : null;
+  };
+
+  // Build CSS using React.CSSProperties for safe style injection
+  const styleContent = Object.entries(THEMES)
+    .map(([theme, prefix]) => {
+      const selector = prefix ? `${prefix} [data-chart="${id}"]` : `[data-chart="${id}"]`;
+      const properties = colorConfig
+        .map(([key, itemConfig]) => {
+          const color = itemConfig.theme?.[theme as keyof typeof itemConfig.theme] || itemConfig.color;
+          const sanitized = sanitizeColor(color);
+          return sanitized ? `  --color-${key}: ${sanitized};` : null;
+        })
+        .filter(Boolean)
+        .join("\n");
+      
+      return properties ? `${selector} {\n${properties}\n}` : null;
+    })
+    .filter(Boolean)
+    .join("\n");
+
+  // Use a style element with text content instead of dangerouslySetInnerHTML
+  return <style>{styleContent}</style>;
 };
 
 const ChartTooltip = RechartsPrimitive.Tooltip;
