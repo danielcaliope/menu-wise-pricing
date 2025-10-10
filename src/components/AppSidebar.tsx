@@ -1,4 +1,4 @@
-import { LayoutDashboard, Package, FileText, Tag, DollarSign, Settings, LogOut, PackageCheck, Bell, BarChart3, FileSpreadsheet, MenuSquare } from "lucide-react";
+import { LayoutDashboard, Package, FileText, Tag, DollarSign, Settings, LogOut, PackageCheck, Bell, BarChart3, FileSpreadsheet, MenuSquare, Building2 } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -22,6 +22,7 @@ const navigation = [
   { title: "Categorias", url: "/categories", icon: Tag },
   { title: "Controle de Estoque", url: "/stock", icon: PackageCheck },
   { title: "Precificação", url: "/pricing", icon: DollarSign },
+  { title: "Custos Indiretos", url: "/indirect-costs", icon: Building2 },
   { title: "Alertas de Custos", url: "/cost-alerts", icon: Bell },
   { title: "Análise Competitiva", url: "/competitive-analysis", icon: BarChart3 },
   { title: "Relatórios", url: "/reports", icon: FileSpreadsheet },

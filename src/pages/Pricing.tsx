@@ -162,7 +162,8 @@ export default function Pricing() {
     const recipe = recipes.find(r => r.id === recipeId);
     if (!recipe) return;
 
-    const { data, error } = await supabase
+    // Fetch ingredient costs
+    const { data: ingredientsData, error: ingredientsError } = await supabase
       .from("recipe_ingredients")
       .select(`
         quantity,
@@ -170,22 +171,42 @@ export default function Pricing() {
       `)
       .eq("recipe_id", recipeId);
 
-    if (error) {
+    if (ingredientsError) {
       toast({
         title: "Erro ao calcular custo",
-        description: error.message,
+        description: ingredientsError.message,
         variant: "destructive",
       });
       return;
     }
 
-    const baseCost = (data as any || []).reduce((sum: number, ri: any) => {
+    // Fetch indirect costs for this recipe
+    const { data: indirectCostsData, error: indirectCostsError } = await supabase
+      .from("recipe_indirect_costs")
+      .select("amount")
+      .eq("recipe_id", recipeId);
+
+    if (indirectCostsError) {
+      console.error("Error fetching indirect costs:", indirectCostsError);
+    }
+
+    // Calculate base ingredient cost
+    const baseCost = (ingredientsData as any || []).reduce((sum: number, ri: any) => {
       return sum + (ri.quantity * ri.ingredients.unit_cost);
     }, 0);
 
-    // Apply waste percentage
+    // Calculate total indirect costs
+    const indirectCostsTotal = (indirectCostsData || []).reduce((sum: number, cost: any) => {
+      return sum + Number(cost.amount);
+    }, 0);
+
+    // Apply waste percentage to ingredient costs only
     const costWithWaste = baseCost * (1 + recipe.waste_percentage / 100);
-    setRecipeCost(costWithWaste);
+    
+    // Total cost = ingredient cost with waste + indirect costs
+    const totalCost = costWithWaste + indirectCostsTotal;
+    
+    setRecipeCost(totalCost);
   };
 
   const calculateSuggestedPrice = () => {

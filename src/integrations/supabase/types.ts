@@ -163,6 +163,39 @@ export type Database = {
         }
         Relationships: []
       }
+      indirect_costs: {
+        Row: {
+          amount: number
+          cost_type: string
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          cost_type: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          cost_type?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ingredient_stock: {
         Row: {
           created_at: string
@@ -350,6 +383,47 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      recipe_indirect_costs: {
+        Row: {
+          amount: number
+          cost_name: string
+          cost_type: string
+          created_at: string
+          id: string
+          notes: string | null
+          recipe_id: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          cost_name: string
+          cost_type: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          recipe_id: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          cost_name?: string
+          cost_type?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          recipe_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recipe_indirect_costs_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       recipe_ingredients: {
         Row: {
