@@ -61,38 +61,49 @@ ChartContainer.displayName = "Chart";
 const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
   const colorConfig = Object.entries(config).filter(([_, config]) => config.theme || config.color);
 
-  if (!colorConfig.length) {
-    return null;
-  }
+  React.useEffect(() => {
+    if (!colorConfig.length) {
+      return;
+    }
 
-  // Sanitize color values to prevent XSS
-  const sanitizeColor = (color: string | undefined): string | null => {
-    if (!color) return null;
-    // Only allow valid CSS color formats
-    const validColorRegex = /^(#[0-9A-Fa-f]{3,8}|rgb\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*\)|rgba\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*,\s*[\d.]+\s*\)|hsl\(\s*\d+\s*,\s*\d+%\s*,\s*\d+%\s*\)|hsla\(\s*\d+\s*,\s*\d+%\s*,\s*\d+%\s*,\s*[\d.]+\s*\))$/;
-    return validColorRegex.test(color.trim()) ? color.trim() : null;
-  };
+    const styleId = `chart-style-${id}`;
+    let styleElement = document.getElementById(styleId) as HTMLStyleElement;
+    
+    if (!styleElement) {
+      styleElement = document.createElement('style');
+      styleElement.id = styleId;
+      document.head.appendChild(styleElement);
+    }
 
-  // Build CSS using React.CSSProperties for safe style injection
-  const styleContent = Object.entries(THEMES)
-    .map(([theme, prefix]) => {
-      const selector = prefix ? `${prefix} [data-chart="${id}"]` : `[data-chart="${id}"]`;
-      const properties = colorConfig
-        .map(([key, itemConfig]) => {
-          const color = itemConfig.theme?.[theme as keyof typeof itemConfig.theme] || itemConfig.color;
-          const sanitized = sanitizeColor(color);
-          return sanitized ? `  --color-${key}: ${sanitized};` : null;
-        })
-        .filter(Boolean)
-        .join("\n");
-      
-      return properties ? `${selector} {\n${properties}\n}` : null;
-    })
-    .filter(Boolean)
-    .join("\n");
+    // Generate CSS content safely without dangerouslySetInnerHTML
+    const cssContent = Object.entries(THEMES)
+      .map(([theme, prefix]) => {
+        const themeStyles = colorConfig
+          .map(([key, itemConfig]) => {
+            const color = itemConfig.theme?.[theme as keyof typeof itemConfig.theme] || itemConfig.color;
+            // Sanitize color values to prevent CSS injection
+            if (!color) return null;
+            const sanitizedColor = String(color).replace(/[^a-zA-Z0-9#(),.\s%-]/g, '');
+            return `  --color-${key}: ${sanitizedColor};`;
+          })
+          .filter(Boolean)
+          .join('\n');
+        
+        return `${prefix} [data-chart="${id}"] {\n${themeStyles}\n}`;
+      })
+      .join('\n');
 
-  // Use a style element with text content instead of dangerouslySetInnerHTML
-  return <style>{styleContent}</style>;
+    styleElement.textContent = cssContent;
+
+    return () => {
+      const element = document.getElementById(styleId);
+      if (element) {
+        element.remove();
+      }
+    };
+  }, [id, colorConfig]);
+
+  return null;
 };
 
 const ChartTooltip = RechartsPrimitive.Tooltip;
