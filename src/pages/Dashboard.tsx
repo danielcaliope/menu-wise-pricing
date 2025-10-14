@@ -20,6 +20,10 @@ type Stats = {
   totalPricings: number;
   lowStockCount: number;
   unreadAlerts: number;
+  totalSales: number;
+  totalRevenue: number;
+  totalProfit: number;
+  averageMargin: number;
 };
 
 export default function Dashboard() {
@@ -33,6 +37,10 @@ export default function Dashboard() {
     totalPricings: 0,
     lowStockCount: 0,
     unreadAlerts: 0,
+    totalSales: 0,
+    totalRevenue: 0,
+    totalProfit: 0,
+    averageMargin: 0,
   });
   const [topRecipes, setTopRecipes] = useState<any[]>([]);
   const [costTrends, setCostTrends] = useState<any[]>([]);
@@ -41,6 +49,9 @@ export default function Dashboard() {
   const [categoryDistribution, setCategoryDistribution] = useState<any[]>([]);
   const [mostUsedIngredients, setMostUsedIngredients] = useState<any[]>([]);
   const [profitabilityAnalysis, setProfitabilityAnalysis] = useState<any[]>([]);
+  const [salesTrends, setSalesTrends] = useState<any[]>([]);
+  const [topSellingRecipes, setTopSellingRecipes] = useState<any[]>([]);
+  const [monthlyComparison, setMonthlyComparison] = useState<any>(null);
 
   useEffect(() => {
     checkAuthAndFetch();
@@ -63,6 +74,9 @@ export default function Dashboard() {
       fetchCategoryDistribution(session.user.id),
       fetchMostUsedIngredients(session.user.id),
       fetchProfitabilityAnalysis(session.user.id),
+      fetchSalesTrends(session.user.id),
+      fetchTopSellingRecipes(session.user.id),
+      fetchMonthlyComparison(session.user.id),
     ]);
     setLoading(false);
   };
@@ -123,6 +137,17 @@ export default function Dashboard() {
       .eq("user_id", userId)
       .eq("is_read", false);
 
+    // Sales statistics
+    const { data: sales } = await supabase
+      .from("sales")
+      .select("quantity, final_price, total_amount, profit")
+      .eq("user_id", userId);
+
+    const totalSalesCount = sales?.length || 0;
+    const totalRevenue = sales?.reduce((sum, sale) => sum + Number(sale.final_price || sale.total_amount), 0) || 0;
+    const totalProfit = sales?.reduce((sum, sale) => sum + Number(sale.profit), 0) || 0;
+    const averageMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
+
     setStats({
       totalIngredients: ingredientsCount || 0,
       totalRecipes: recipesCount || 0,
@@ -130,6 +155,10 @@ export default function Dashboard() {
       totalPricings: pricingsCount || 0,
       lowStockCount: lowStock,
       unreadAlerts: unreadCount || 0,
+      totalSales: totalSalesCount,
+      totalRevenue: totalRevenue,
+      totalProfit: totalProfit,
+      averageMargin: averageMargin,
     });
   };
 
@@ -293,6 +322,119 @@ export default function Dashboard() {
     }
   };
 
+  const fetchSalesTrends = async (userId: string) => {
+    const thirtyDaysAgo = subDays(new Date(), 30);
+    
+    const { data } = await supabase
+      .from("sales")
+      .select("sale_date, final_price, total_amount, profit")
+      .eq("user_id", userId)
+      .gte("sale_date", thirtyDaysAgo.toISOString())
+      .order("sale_date", { ascending: true });
+
+    if (data && data.length > 0) {
+      // Group by date
+      const dateGroups: Record<string, { revenue: number; profit: number }> = {};
+      
+      data.forEach((sale: any) => {
+        const date = format(new Date(sale.sale_date), "dd/MM");
+        if (!dateGroups[date]) {
+          dateGroups[date] = { revenue: 0, profit: 0 };
+        }
+        dateGroups[date].revenue += Number(sale.final_price || sale.total_amount);
+        dateGroups[date].profit += Number(sale.profit);
+      });
+
+      const trends = Object.entries(dateGroups).map(([date, values]) => ({
+        date,
+        vendas: values.revenue,
+        lucro: values.profit,
+      }));
+      
+      setSalesTrends(trends);
+    }
+  };
+
+  const fetchTopSellingRecipes = async (userId: string) => {
+    const { data } = await supabase
+      .from("sales")
+      .select(`
+        recipe_id,
+        quantity,
+        final_price,
+        total_amount,
+        profit,
+        recipes (name)
+      `)
+      .eq("user_id", userId);
+
+    if (data && data.length > 0) {
+      const recipeStats: Record<string, { name: string; quantity: number; revenue: number; profit: number }> = {};
+      
+      data.forEach((sale: any) => {
+        const id = sale.recipe_id;
+        const name = sale.recipes?.name;
+        if (name) {
+          if (!recipeStats[id]) {
+            recipeStats[id] = { name, quantity: 0, revenue: 0, profit: 0 };
+          }
+          recipeStats[id].quantity += sale.quantity;
+          recipeStats[id].revenue += Number(sale.final_price || sale.total_amount);
+          recipeStats[id].profit += Number(sale.profit);
+        }
+      });
+
+      const topSelling = Object.values(recipeStats)
+        .sort((a, b) => b.quantity - a.quantity)
+        .slice(0, 5)
+        .map(item => ({
+          name: item.name.length > 20 ? item.name.substring(0, 20) + "..." : item.name,
+          quantidade: item.quantity,
+          receita: item.revenue,
+          lucro: item.profit,
+        }));
+      
+      setTopSellingRecipes(topSelling);
+    }
+  };
+
+  const fetchMonthlyComparison = async (userId: string) => {
+    const now = new Date();
+    const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+
+    const { data: currentMonth } = await supabase
+      .from("sales")
+      .select("final_price, total_amount, profit")
+      .eq("user_id", userId)
+      .gte("sale_date", currentMonthStart.toISOString());
+
+    const { data: lastMonth } = await supabase
+      .from("sales")
+      .select("final_price, total_amount, profit")
+      .eq("user_id", userId)
+      .gte("sale_date", lastMonthStart.toISOString())
+      .lte("sale_date", lastMonthEnd.toISOString());
+
+    const currentRevenue = currentMonth?.reduce((sum, sale) => sum + Number(sale.final_price || sale.total_amount), 0) || 0;
+    const currentProfit = currentMonth?.reduce((sum, sale) => sum + Number(sale.profit), 0) || 0;
+    const lastRevenue = lastMonth?.reduce((sum, sale) => sum + Number(sale.final_price || sale.total_amount), 0) || 0;
+    const lastProfit = lastMonth?.reduce((sum, sale) => sum + Number(sale.profit), 0) || 0;
+
+    const revenueChange = lastRevenue > 0 ? ((currentRevenue - lastRevenue) / lastRevenue) * 100 : 0;
+    const profitChange = lastProfit > 0 ? ((currentProfit - lastProfit) / lastProfit) * 100 : 0;
+
+    setMonthlyComparison({
+      currentRevenue,
+      currentProfit,
+      lastRevenue,
+      lastProfit,
+      revenueChange,
+      profitChange,
+    });
+  };
+
   const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8", "#82CA9D", "#FF6B9D", "#C084FC"];
 
   if (loading) {
@@ -320,99 +462,221 @@ export default function Dashboard() {
           </p>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card className="hover-scale">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Total de Ingredientes
-              </CardTitle>
-              <Package className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalIngredients}</div>
-              <p className="text-xs text-muted-foreground">
-                Cadastrados no sistema
-              </p>
-            </CardContent>
-          </Card>
+        {/* Financial Overview */}
+        <div>
+          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            <Target className="h-5 w-5" />
+            Visão Financeira
+          </h2>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <Card className="hover-scale">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Vendas do Mês
+                </CardTitle>
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  R$ {monthlyComparison?.currentRevenue.toFixed(2) || '0.00'}
+                </div>
+                {monthlyComparison && monthlyComparison.revenueChange !== 0 && (
+                  <p className={`text-xs ${monthlyComparison.revenueChange > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {monthlyComparison.revenueChange > 0 ? '+' : ''}
+                    {monthlyComparison.revenueChange.toFixed(1)}% vs mês anterior
+                  </p>
+                )}
+              </CardContent>
+            </Card>
 
-          <Card className="hover-scale">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Receitas Criadas
-              </CardTitle>
-              <ChefHat className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalRecipes}</div>
-              <p className="text-xs text-muted-foreground">
-                Fichas técnicas completas
-              </p>
-            </CardContent>
-          </Card>
+            <Card className="hover-scale">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Lucro do Mês
+                </CardTitle>
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  R$ {monthlyComparison?.currentProfit.toFixed(2) || '0.00'}
+                </div>
+                {monthlyComparison && monthlyComparison.profitChange !== 0 && (
+                  <p className={`text-xs ${monthlyComparison.profitChange > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {monthlyComparison.profitChange > 0 ? '+' : ''}
+                    {monthlyComparison.profitChange.toFixed(1)}% vs mês anterior
+                  </p>
+                )}
+              </CardContent>
+            </Card>
 
-          <Card className="hover-scale">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Custo Médio
-              </CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                R$ {stats.averageCost.toFixed(2)}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Por ingrediente
-              </p>
-            </CardContent>
-          </Card>
+            <Card className="hover-scale">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Total de Vendas
+                </CardTitle>
+                <ChefHat className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.totalSales}</div>
+                <p className="text-xs text-muted-foreground">
+                  Vendas registradas
+                </p>
+              </CardContent>
+            </Card>
 
-          <Card className="hover-scale">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Precificações
-              </CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalPricings}</div>
-              <p className="text-xs text-muted-foreground">
-                Cálculos realizados
-              </p>
-            </CardContent>
-          </Card>
+            <Card className="hover-scale">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Margem Média
+                </CardTitle>
+                <PieChartIcon className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {stats.averageMargin.toFixed(1)}%
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Lucro sobre vendas
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
 
-          <Card className="hover-scale">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Itens em Falta
+        {/* Sales Trends Chart */}
+        {salesTrends.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="h-5 w-5" />
+                Evolução de Vendas e Lucro (Últimos 30 dias)
               </CardTitle>
-              <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+              <CardDescription>
+                Acompanhe o desempenho diário do seu negócio
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.lowStockCount}</div>
-              <p className="text-xs text-muted-foreground">
-                Estoque abaixo do mínimo
-              </p>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={salesTrends}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" />
+                  <YAxis />
+                  <Tooltip
+                    formatter={(value: number) => `R$ ${value.toFixed(2)}`}
+                  />
+                  <Legend />
+                  <Line
+                    type="monotone"
+                    dataKey="vendas"
+                    stroke="#8884d8"
+                    strokeWidth={2}
+                    name="Vendas"
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="lucro"
+                    stroke="#82ca9d"
+                    strokeWidth={2}
+                    name="Lucro"
+                  />
+                </LineChart>
+              </ResponsiveContainer>
             </CardContent>
           </Card>
+        )}
 
-          <Card className="hover-scale">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Alertas Novos
+        {/* Top Selling Recipes */}
+        {topSellingRecipes.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5" />
+                Receitas Mais Vendidas
               </CardTitle>
-              <Bell className="h-4 w-4 text-muted-foreground" />
+              <CardDescription>
+                Ranking de produtos por quantidade vendida
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.unreadAlerts}</div>
-              <p className="text-xs text-muted-foreground">
-                Não lidos
-              </p>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={topSellingRecipes}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="quantidade" fill="#8884d8" name="Quantidade" />
+                  <Bar dataKey="lucro" fill="#82ca9d" name="Lucro (R$)" />
+                </BarChart>
+              </ResponsiveContainer>
             </CardContent>
           </Card>
+        )}
+
+        {/* System Stats */}
+        <div>
+          <h2 className="text-xl font-semibold mb-4">Indicadores do Sistema</h2>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <Card className="hover-scale">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Ingredientes
+                </CardTitle>
+                <Package className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.totalIngredients}</div>
+                <p className="text-xs text-muted-foreground">
+                  Cadastrados
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="hover-scale">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Receitas
+                </CardTitle>
+                <ChefHat className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.totalRecipes}</div>
+                <p className="text-xs text-muted-foreground">
+                  Fichas técnicas
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="hover-scale">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Estoque Baixo
+                </CardTitle>
+                <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.lowStockCount}</div>
+                <p className="text-xs text-muted-foreground">
+                  Itens em falta
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="hover-scale">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Alertas
+                </CardTitle>
+                <Bell className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.unreadAlerts}</div>
+                <p className="text-xs text-muted-foreground">
+                  Não lidos
+                </p>
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
         {/* Recent Alerts */}
