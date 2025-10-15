@@ -7,9 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { FileText, Download, TrendingUp, DollarSign, Package, ChefHat } from "lucide-react";
+import { FileText, Download, TrendingUp, DollarSign, Package, ChefHat, FileSpreadsheet } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import * as XLSX from "xlsx";
 
 type ReportType = 'costs' | 'profitability' | 'stock' | 'movements';
 
@@ -196,6 +199,158 @@ export default function Reports() {
     document.body.removeChild(link);
   };
 
+  const exportToExcel = () => {
+    if (!reportData) return;
+
+    const timestamp = format(new Date(), "yyyy-MM-dd_HH-mm-ss");
+    let worksheetData: any[] = [];
+    let filename = "";
+
+    switch (reportData.type) {
+      case 'costs':
+        worksheetData = [
+          ["Nome", "Unidade", "Custo Unitário", "Fornecedor", "Atualizado Em"],
+          ...reportData.details.map((item: any) => [
+            item.name,
+            item.unit,
+            Number(item.unit_cost),
+            item.supplier || '',
+            format(new Date(item.updated_at), 'dd/MM/yyyy HH:mm')
+          ])
+        ];
+        filename = `relatorio-custos-${timestamp}.xlsx`;
+        break;
+
+      case 'profitability':
+        worksheetData = [
+          ["Receita", "Custo", "Preço Sugerido", "Margem %", "Data"],
+          ...reportData.details.map((item: any) => [
+            item.recipe_name,
+            Number(item.recipe_cost),
+            Number(item.suggested_price),
+            Number(item.profit_margin_percentage),
+            format(new Date(item.created_at), 'dd/MM/yyyy HH:mm')
+          ])
+        ];
+        filename = `relatorio-rentabilidade-${timestamp}.xlsx`;
+        break;
+
+      case 'stock':
+        worksheetData = [
+          ["Ingrediente", "Quantidade Atual", "Quantidade Mínima", "Unidade", "Valor Total"],
+          ...reportData.details.map((item: any) => [
+            item.ingredients.name,
+            item.current_quantity,
+            item.min_quantity,
+            item.ingredients.unit,
+            item.current_quantity * Number(item.ingredients.unit_cost)
+          ])
+        ];
+        filename = `relatorio-estoque-${timestamp}.xlsx`;
+        break;
+
+      case 'movements':
+        worksheetData = [
+          ["Ingrediente", "Tipo", "Quantidade", "Quantidade Anterior", "Quantidade Nova", "Notas", "Data"],
+          ...reportData.details.map((item: any) => [
+            item.ingredients.name,
+            item.movement_type,
+            item.quantity,
+            item.previous_quantity,
+            item.new_quantity,
+            item.notes || '',
+            format(new Date(item.created_at), 'dd/MM/yyyy HH:mm')
+          ])
+        ];
+        filename = `relatorio-movimentacoes-${timestamp}.xlsx`;
+        break;
+    }
+
+    const ws = XLSX.utils.aoa_to_sheet(worksheetData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Relatório");
+    XLSX.writeFile(wb, filename);
+
+    toast({
+      title: "Relatório exportado",
+      description: "Arquivo Excel baixado com sucesso"
+    });
+  };
+
+  const exportToPDF = () => {
+    if (!reportData) return;
+
+    const doc = new jsPDF();
+    const timestamp = format(new Date(), "dd/MM/yyyy HH:mm");
+    
+    doc.setFontSize(18);
+    doc.text(currentConfig.title, 14, 20);
+    doc.setFontSize(11);
+    doc.text(`Gerado em: ${timestamp}`, 14, 28);
+    doc.text(`Período: Últimos ${period} dias`, 14, 34);
+
+    let tableData: any[] = [];
+    let headers: string[] = [];
+
+    switch (reportData.type) {
+      case 'costs':
+        headers = ["Nome", "Unidade", "Custo", "Fornecedor"];
+        tableData = reportData.details.map((item: any) => [
+          item.name,
+          item.unit,
+          `R$ ${Number(item.unit_cost).toFixed(2)}`,
+          item.supplier || '-'
+        ]);
+        break;
+
+      case 'profitability':
+        headers = ["Receita", "Custo", "Preço", "Margem %"];
+        tableData = reportData.details.map((item: any) => [
+          item.recipe_name,
+          `R$ ${Number(item.recipe_cost).toFixed(2)}`,
+          `R$ ${Number(item.suggested_price).toFixed(2)}`,
+          `${Number(item.profit_margin_percentage).toFixed(1)}%`
+        ]);
+        break;
+
+      case 'stock':
+        headers = ["Ingrediente", "Atual", "Mínimo", "Valor"];
+        tableData = reportData.details.map((item: any) => [
+          item.ingredients.name,
+          `${item.current_quantity} ${item.ingredients.unit}`,
+          `${item.min_quantity} ${item.ingredients.unit}`,
+          `R$ ${(item.current_quantity * Number(item.ingredients.unit_cost)).toFixed(2)}`
+        ]);
+        break;
+
+      case 'movements':
+        headers = ["Ingrediente", "Tipo", "Qtd", "Data"];
+        tableData = reportData.details.map((item: any) => [
+          item.ingredients.name,
+          item.movement_type,
+          `${item.quantity} ${item.ingredients.unit}`,
+          format(new Date(item.created_at), 'dd/MM/yy')
+        ]);
+        break;
+    }
+
+    autoTable(doc, {
+      head: [headers],
+      body: tableData,
+      startY: 40,
+      styles: { fontSize: 8, cellPadding: 2 },
+      headStyles: { fillColor: [59, 130, 246] }
+    });
+
+    const filename = `relatorio-${reportData.type}-${format(new Date(), "yyyy-MM-dd_HH-mm-ss")}.pdf`;
+    doc.save(filename);
+
+    toast({
+      title: "Relatório exportado",
+      description: "Arquivo PDF baixado com sucesso"
+    });
+  };
+
   const reportConfigs = {
     costs: {
       title: "Relatório de Custos",
@@ -277,9 +432,17 @@ export default function Reports() {
                     <SelectItem value="90">Últimos 90 dias</SelectItem>
                   </SelectContent>
                 </Select>
-                <Button onClick={exportToCSV} disabled={isLoading || !reportData}>
+                <Button variant="outline" onClick={exportToCSV} disabled={isLoading || !reportData}>
                   <Download className="mr-2 h-4 w-4" />
-                  Exportar CSV
+                  CSV
+                </Button>
+                <Button variant="outline" onClick={exportToExcel} disabled={isLoading || !reportData}>
+                  <FileSpreadsheet className="mr-2 h-4 w-4" />
+                  Excel
+                </Button>
+                <Button onClick={exportToPDF} disabled={isLoading || !reportData}>
+                  <FileText className="mr-2 h-4 w-4" />
+                  PDF
                 </Button>
               </div>
             </div>
