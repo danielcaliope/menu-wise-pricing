@@ -634,7 +634,7 @@ export default function Pricing() {
                         </span>
                       </div>
                       <div className="border-t pt-3">
-                        <div className="flex justify-between font-semibold">
+                        <div className="flex justify-between font-semibold text-sm">
                           <span>Preço Com Delivery:</span>
                           <span className="text-primary text-lg">
                             R$ {(suggestedPrice * (1 + config.delivery_fee_percentage / 100)).toFixed(2)}
