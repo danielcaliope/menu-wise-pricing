@@ -76,7 +76,9 @@ export default function Pricing() {
   }, [recipeCost, config]);
 
   const checkAuthAndFetch = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
     if (!session) {
       navigate("/auth");
       return;
@@ -91,11 +93,7 @@ export default function Pricing() {
   };
 
   const fetchProfile = async (userId: string) => {
-    const { data } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", userId)
-      .single();
+    const { data } = await supabase.from("profiles").select("*").eq("id", userId).single();
 
     setProfile(data);
   };
@@ -114,10 +112,7 @@ export default function Pricing() {
   };
 
   const fetchRecipes = async () => {
-    const { data, error } = await supabase
-      .from("recipes")
-      .select("id, name, waste_percentage")
-      .order("name");
+    const { data, error } = await supabase.from("recipes").select("id, name, waste_percentage").order("name");
 
     if (error) {
       toast({
@@ -127,10 +122,10 @@ export default function Pricing() {
       });
     } else {
       setRecipes(data || []);
-      
+
       // Check if there's a recipe ID in URL params
       const recipeParam = searchParams.get("recipe");
-      if (recipeParam && data?.some(r => r.id === recipeParam)) {
+      if (recipeParam && data?.some((r) => r.id === recipeParam)) {
         setSelectedRecipeId(recipeParam);
       }
     }
@@ -138,11 +133,7 @@ export default function Pricing() {
   };
 
   const fetchPricingConfig = async (userId: string) => {
-    const { data, error } = await supabase
-      .from("pricing_configs")
-      .select("*")
-      .eq("user_id", userId)
-      .maybeSingle();
+    const { data, error } = await supabase.from("pricing_configs").select("*").eq("user_id", userId).maybeSingle();
 
     if (data) {
       setConfig({
@@ -159,16 +150,18 @@ export default function Pricing() {
   };
 
   const calculateRecipeCost = async (recipeId: string) => {
-    const recipe = recipes.find(r => r.id === recipeId);
+    const recipe = recipes.find((r) => r.id === recipeId);
     if (!recipe) return;
 
     // Fetch ingredient costs
     const { data: ingredientsData, error: ingredientsError } = await supabase
       .from("recipe_ingredients")
-      .select(`
+      .select(
+        `
         quantity,
         ingredients (unit_cost)
-      `)
+      `,
+      )
       .eq("recipe_id", recipeId);
 
     if (ingredientsError) {
@@ -191,8 +184,8 @@ export default function Pricing() {
     }
 
     // Calculate base ingredient cost
-    const baseCost = (ingredientsData as any || []).reduce((sum: number, ri: any) => {
-      return sum + (ri.quantity * ri.ingredients.unit_cost);
+    const baseCost = ((ingredientsData as any) || []).reduce((sum: number, ri: any) => {
+      return sum + ri.quantity * ri.ingredients.unit_cost;
     }, 0);
 
     // Calculate total indirect costs
@@ -202,10 +195,10 @@ export default function Pricing() {
 
     // Apply waste percentage to ingredient costs only
     const costWithWaste = baseCost * (1 + recipe.waste_percentage / 100);
-    
+
     // Total cost = ingredient cost with waste + indirect costs
     const totalCost = costWithWaste + indirectCostsTotal;
-    
+
     setRecipeCost(totalCost);
   };
 
@@ -227,21 +220,24 @@ export default function Pricing() {
   };
 
   const handleSaveConfig = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return;
 
-    const { error } = await supabase
-      .from("pricing_configs")
-      .upsert({
+    const { error } = await supabase.from("pricing_configs").upsert(
+      {
         user_id: user.id,
         profit_margin_percentage: config.profit_margin_percentage,
         tax_percentage: config.tax_percentage,
         regional_factor: config.regional_factor,
         income_level: config.income_level,
         delivery_fee_percentage: config.delivery_fee_percentage,
-      }, {
-        onConflict: 'user_id'
-      });
+      },
+      {
+        onConflict: "user_id",
+      },
+    );
 
     if (error) {
       toast({
@@ -257,8 +253,8 @@ export default function Pricing() {
 
   const handleIncomeChange = (income: string) => {
     const factors = {
-      low: 0.90,
-      medium: 1.10,
+      low: 0.9,
+      medium: 1.1,
       high: 1.25,
     };
     setConfig({
@@ -278,17 +274,18 @@ export default function Pricing() {
       return;
     }
 
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return;
 
-    const selectedRecipe = recipes.find(r => r.id === selectedRecipeId);
+    const selectedRecipe = recipes.find((r) => r.id === selectedRecipeId);
     if (!selectedRecipe) return;
 
     const priceWithDelivery = suggestedPrice * (1 + config.delivery_fee_percentage / 100);
 
-    const { error } = await supabase
-      .from("pricing_history")
-      .insert([{
+    const { error } = await supabase.from("pricing_history").insert([
+      {
         user_id: user.id,
         recipe_id: selectedRecipeId,
         recipe_name: selectedRecipe.name,
@@ -300,7 +297,8 @@ export default function Pricing() {
         delivery_fee_percentage: config.delivery_fee_percentage,
         price_without_delivery: suggestedPrice,
         price_with_delivery: priceWithDelivery,
-      }]);
+      },
+    ]);
 
     if (error) {
       toast({
@@ -317,10 +315,7 @@ export default function Pricing() {
   const handleDeletePricingHistory = async (id: string) => {
     if (!confirm("Tem certeza que deseja excluir este item do histórico?")) return;
 
-    const { error } = await supabase
-      .from("pricing_history")
-      .delete()
-      .eq("id", id);
+    const { error } = await supabase.from("pricing_history").delete().eq("id", id);
 
     if (error) {
       toast({
@@ -330,7 +325,9 @@ export default function Pricing() {
       });
     } else {
       toast({ title: "Item excluído com sucesso!" });
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (user) fetchPricingHistory(user.id);
     }
   };
@@ -357,7 +354,7 @@ export default function Pricing() {
     <Layout>
       <div className="space-y-6 animate-fade-in max-w-4xl">
         <Breadcrumbs items={[{ label: "Precificação" }]} />
-        
+
         <div>
           <h1 className="text-3xl font-bold mb-2">Precificação Inteligente</h1>
           <p className="text-muted-foreground">
@@ -370,11 +367,7 @@ export default function Pricing() {
             <CardContent className="pt-6">
               <p className="text-center text-muted-foreground">
                 Você precisa criar fichas técnicas antes de fazer a precificação.
-                 <Button
-                  variant="link"
-                  onClick={() => navigate("/recipes")}
-                  className="ml-2"
-                >
+                <Button variant="link" onClick={() => navigate("/recipes")} className="ml-2">
                   Ir para Receitas / Pratos
                 </Button>
               </p>
@@ -411,9 +404,7 @@ export default function Pricing() {
                 <div className="p-4 bg-muted rounded-lg">
                   <div className="flex justify-between items-center">
                     <span className="text-sm font-medium">Custo Real da Receita:</span>
-                    <span className="text-xl font-bold text-primary">
-                      R$ {recipeCost.toFixed(2)}
-                    </span>
+                    <span className="text-xl font-bold text-primary">R$ {recipeCost.toFixed(2)}</span>
                   </div>
                 </div>
               )}
@@ -427,9 +418,7 @@ export default function Pricing() {
               <TrendingUp className="h-5 w-5" />
               Configurações de Precificação
             </CardTitle>
-            <CardDescription>
-              Ajuste margem de lucro, impostos e fator regional
-            </CardDescription>
+            <CardDescription>Ajuste margem de lucro, impostos e fator regional</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="grid gap-4 sm:grid-cols-2">
@@ -498,7 +487,8 @@ export default function Pricing() {
                     </Badge>
                   </div>
                   <p className="text-sm text-muted-foreground mb-4">
-                    O fator regional ajusta o preço com base no poder aquisitivo da região onde seu estabelecimento está localizado.
+                    O fator regional ajusta o preço com base no poder aquisitivo da região onde seu estabelecimento está
+                    localizado.
                   </p>
                   {profile?.plan === "free" ? (
                     <div>
@@ -589,28 +579,22 @@ export default function Pricing() {
                 <DollarSign className="h-6 w-6" />
                 Preço Sugerido
               </CardTitle>
-              <CardDescription>
-                Cálculo baseado nas suas configurações
-              </CardDescription>
+              <CardDescription>Cálculo baseado nas suas configurações</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="text-center p-6 bg-muted rounded-lg border-2">
                     <p className="text-sm text-muted-foreground mb-2">Preço Sem Delivery</p>
-                    <p className="text-3xl font-bold text-foreground">
-                      R$ {suggestedPrice.toFixed(2)}
-                    </p>
+                    <p className="text-3xl font-bold text-foreground">R$ {suggestedPrice.toFixed(2)}</p>
                   </div>
                   <div className="text-center p-6 bg-gradient-primary rounded-lg text-primary-foreground border-2 border-primary">
                     <p className="text-sm opacity-90 mb-2">Preço Com Delivery</p>
-                    <p className="text-3xl font-bold">
+                    <p className="text-3xl font-bold text-foreground">
                       R$ {(suggestedPrice * (1 + config.delivery_fee_percentage / 100)).toFixed(2)}
                     </p>
                     {config.delivery_fee_percentage > 0 && (
-                      <p className="text-xs opacity-75 mt-1">
-                        +{config.delivery_fee_percentage}% taxa delivery
-                      </p>
+                      <p className="text-xs opacity-75 mt-1">+{config.delivery_fee_percentage}% taxa delivery</p>
                     )}
                   </div>
                 </div>
@@ -661,13 +645,13 @@ export default function Pricing() {
                   )}
                 </div>
 
-                 <div className="p-3 bg-success/10 border border-success/20 rounded-lg">
+                <div className="p-3 bg-success/10 border border-success/20 rounded-lg">
                   <p className="text-sm text-center">
                     <span className="font-semibold">Lucro por venda (sem delivery):</span>{" "}
                     <span className="text-success font-bold">
                       R$ {(suggestedPrice - recipeCost - taxAmount).toFixed(2)}
-                    </span>
-                    {" "}({((profitAmount / recipeCost) * 100).toFixed(1)}%)
+                    </span>{" "}
+                    ({((profitAmount / recipeCost) * 100).toFixed(1)}%)
                   </p>
                 </div>
 
@@ -687,11 +671,7 @@ export default function Pricing() {
                 <History className="h-5 w-5" />
                 Histórico de Precificações
               </CardTitle>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowHistory(!showHistory)}
-              >
+              <Button variant="outline" size="sm" onClick={() => setShowHistory(!showHistory)}>
                 {showHistory ? "Ocultar" : "Mostrar"}
               </Button>
             </div>
@@ -699,16 +679,11 @@ export default function Pricing() {
           {showHistory && (
             <CardContent>
               {pricingHistory.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">
-                  Nenhuma precificação salva ainda
-                </p>
+                <p className="text-center text-muted-foreground py-8">Nenhuma precificação salva ainda</p>
               ) : (
                 <div className="space-y-3">
                   {pricingHistory.map((item) => (
-                    <div
-                      key={item.id}
-                      className="p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-                    >
+                    <div key={item.id} className="p-4 border rounded-lg hover:bg-muted/50 transition-colors">
                       <div className="flex justify-between items-start mb-2">
                         <div>
                           <h4 className="font-semibold">{item.recipe_name}</h4>
@@ -726,7 +701,10 @@ export default function Pricing() {
                           <div className="text-right">
                             <div className="space-y-1">
                               <p className="text-sm text-muted-foreground">
-                                Sem delivery: <span className="font-semibold text-foreground">R$ {Number(item.price_without_delivery || item.suggested_price).toFixed(2)}</span>
+                                Sem delivery:{" "}
+                                <span className="font-semibold text-foreground">
+                                  R$ {Number(item.price_without_delivery || item.suggested_price).toFixed(2)}
+                                </span>
                               </p>
                               {item.delivery_fee_percentage > 0 && (
                                 <p className="text-lg font-bold text-primary">
