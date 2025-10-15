@@ -325,7 +325,18 @@ const Sales = () => {
                     step="0.01"
                     min="0"
                     value={unitPrice}
-                    onChange={(e) => setUnitPrice(e.target.value)}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value === "" || /^\d*\.?\d{0,2}$/.test(value)) {
+                        setUnitPrice(value);
+                      }
+                    }}
+                    onBlur={(e) => {
+                      const value = parseFloat(e.target.value);
+                      if (!isNaN(value)) {
+                        setUnitPrice(value.toFixed(2));
+                      }
+                    }}
                     required
                   />
                 </div>
@@ -338,7 +349,18 @@ const Sales = () => {
                     step="0.01"
                     min="0"
                     value={costPerUnit}
-                    onChange={(e) => setCostPerUnit(e.target.value)}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value === "" || /^\d*\.?\d{0,2}$/.test(value)) {
+                        setCostPerUnit(value);
+                      }
+                    }}
+                    onBlur={(e) => {
+                      const value = parseFloat(e.target.value);
+                      if (!isNaN(value)) {
+                        setCostPerUnit(value.toFixed(2));
+                      }
+                    }}
                     required
                     readOnly
                     className="bg-muted"
