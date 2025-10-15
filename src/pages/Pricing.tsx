@@ -589,12 +589,12 @@ export default function Pricing() {
                     <p className="text-3xl font-bold text-foreground">R$ {suggestedPrice.toFixed(2)}</p>
                   </div>
                   <div className="text-center p-6 bg-gradient-primary rounded-lg text-primary-foreground border-2 border-primary">
-                    <p className="text-sm opacity-90 mb-2">Preço Com Delivery</p>
-                    <p className="text-3xl font-bold text-foreground">
+                    <p className="text-sm text-primary-foreground opacity-90 mb-2">Preço Com Delivery</p>
+                    <p className="text-3xl font-bold text-primary-foreground">
                       R$ {(suggestedPrice * (1 + config.delivery_fee_percentage / 100)).toFixed(2)}
                     </p>
                     {config.delivery_fee_percentage > 0 && (
-                      <p className="text-xs opacity-75 mt-1">+{config.delivery_fee_percentage}% taxa delivery</p>
+                      <p className="text-xs text-primary-foreground opacity-75 mt-1">+{config.delivery_fee_percentage}% taxa delivery</p>
                     )}
                   </div>
                 </div>
