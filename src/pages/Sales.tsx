@@ -199,9 +199,10 @@ const Sales = () => {
       .single();
     
     if (!error && data) {
-      setCostPerUnit(data.recipe_cost.toString());
+      setCostPerUnit(Number(data.recipe_cost).toFixed(2));
       // Definir o preço com base em delivery ou não
-      setUnitPrice(data.price_without_delivery?.toString() || data.suggested_price.toString());
+      const price = data.price_without_delivery || data.suggested_price;
+      setUnitPrice(Number(price).toFixed(2));
     }
   };
 
@@ -223,7 +224,7 @@ const Sales = () => {
         const price = checked 
           ? (data.price_with_delivery || data.suggested_price)
           : (data.price_without_delivery || data.suggested_price);
-        setUnitPrice(price.toString());
+        setUnitPrice(Number(price).toFixed(2));
       }
     }
   };
