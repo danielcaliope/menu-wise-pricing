@@ -9,6 +9,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Package, ChefHat, DollarSign, TrendingUp, PieChart as PieChartIcon, AlertTriangle, Bell, Calendar, BarChart3, Target } from "lucide-react";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { StatsSkeleton } from "@/components/SkeletonLoader";
+import { QuickActions } from "@/components/QuickActions";
+import { AlertsHighlight } from "@/components/AlertsHighlight";
+import { SetupProgress } from "@/components/SetupProgress";
+import { WeeklyInsights } from "@/components/WeeklyInsights";
 import { LineChart, Line, BarChart, Bar, PieChart as RePieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area, AreaChart, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from "recharts";
 import { format, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -461,6 +465,36 @@ export default function Dashboard() {
             Bem-vindo ao seu painel de controle
           </p>
         </div>
+
+        {/* Setup Progress */}
+        <SetupProgress
+          hasIngredients={stats.totalIngredients > 0}
+          hasRecipes={stats.totalRecipes > 0}
+          hasPricings={stats.totalPricings > 0}
+          hasSales={stats.totalSales > 0}
+        />
+
+        {/* Quick Actions */}
+        <QuickActions
+          hasIngredients={stats.totalIngredients > 0}
+          hasRecipes={stats.totalRecipes > 0}
+        />
+
+        {/* Alerts Highlight */}
+        <AlertsHighlight
+          unreadAlerts={stats.unreadAlerts}
+          lowStockCount={stats.lowStockCount}
+          recentAlerts={recentAlerts}
+        />
+
+        {/* Weekly Insights */}
+        {stats.totalSales > 0 && (
+          <WeeklyInsights
+            monthlyComparison={monthlyComparison}
+            topSellingRecipes={topSellingRecipes}
+            averageMargin={stats.averageMargin}
+          />
+        )}
 
         {/* Financial Overview */}
         <div>

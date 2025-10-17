@@ -144,4 +144,8 @@ All colors MUST be HSL.
   .transition-smooth {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
+
+  .hover-scale {
+    @apply transition-transform duration-200 hover:scale-105;
+  }
 }
