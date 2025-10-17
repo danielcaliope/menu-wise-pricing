@@ -713,59 +713,6 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Recent Alerts */}
-        {recentAlerts.length > 0 && (
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <Bell className="h-5 w-5" />
-                    Alertas Recentes
-                  </CardTitle>
-                  <CardDescription>
-                    Últimas notificações de variação de custos
-                  </CardDescription>
-                </div>
-                <Button onClick={() => navigate("/cost-alerts")} variant="outline" size="sm">
-                  Ver Todos
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {recentAlerts.map((alert) => (
-                  <div
-                    key={alert.id}
-                    className={`flex items-start justify-between p-3 rounded-lg border ${
-                      alert.is_read ? 'bg-background' : 'bg-muted/50'
-                    }`}
-                  >
-                    <div className="space-y-1 flex-1">
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium text-sm">{alert.reference_name}</p>
-                        <Badge
-                          variant={alert.percentage_change > 0 ? "destructive" : "default"}
-                          className="text-xs"
-                        >
-                          {alert.percentage_change > 0 ? '+' : ''}
-                          {alert.percentage_change.toFixed(1)}%
-                        </Badge>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        De R$ {Number(alert.old_value).toFixed(2)} para R$ {Number(alert.new_value).toFixed(2)}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {format(new Date(alert.triggered_at), "PPp", { locale: ptBR })}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
         {/* Advanced Analytics with Tabs */}
         <Card>
           <CardHeader>
