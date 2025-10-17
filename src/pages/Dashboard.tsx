@@ -1086,62 +1086,6 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         </div>
-
-        {/* Quick Actions */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Ações Rápidas</CardTitle>
-            <CardDescription>
-              Acesse rapidamente as principais funcionalidades
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <Button 
-              onClick={() => navigate("/ingredients")} 
-              className="gap-2 h-auto py-4"
-              variant="outline"
-            >
-              <Package className="h-5 w-5" />
-              <div className="text-left">
-                <div className="font-semibold">Ingredientes</div>
-                <div className="text-xs text-muted-foreground">{stats.totalIngredients} cadastrados</div>
-              </div>
-            </Button>
-            <Button 
-              onClick={() => navigate("/recipes")} 
-              className="gap-2 h-auto py-4"
-              variant="outline"
-            >
-              <ChefHat className="h-5 w-5" />
-              <div className="text-left">
-                <div className="font-semibold">Receitas</div>
-                <div className="text-xs text-muted-foreground">{stats.totalRecipes} criadas</div>
-              </div>
-            </Button>
-            <Button 
-              onClick={() => navigate("/pricing")} 
-              className="gap-2 h-auto py-4"
-              variant="outline"
-            >
-              <DollarSign className="h-5 w-5" />
-              <div className="text-left">
-                <div className="font-semibold">Precificação</div>
-                <div className="text-xs text-muted-foreground">{stats.totalPricings} cálculos</div>
-              </div>
-            </Button>
-            <Button 
-              onClick={() => navigate("/settings")} 
-              className="gap-2 h-auto py-4"
-              variant="outline"
-            >
-              <TrendingUp className="h-5 w-5" />
-              <div className="text-left">
-                <div className="font-semibold">Configurações</div>
-                <div className="text-xs text-muted-foreground">Personalize</div>
-              </div>
-            </Button>
-          </CardContent>
-        </Card>
       </div>
     </Layout>
   );
