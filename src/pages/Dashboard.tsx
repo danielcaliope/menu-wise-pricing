@@ -10,7 +10,6 @@ import { Package, ChefHat, DollarSign, TrendingUp, PieChart as PieChartIcon, Ale
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { StatsSkeleton } from "@/components/SkeletonLoader";
 import { QuickActions } from "@/components/QuickActions";
-import { AlertsHighlight } from "@/components/AlertsHighlight";
 import { SetupProgress } from "@/components/SetupProgress";
 import { WeeklyInsights } from "@/components/WeeklyInsights";
 import { LineChart, Line, BarChart, Bar, PieChart as RePieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area, AreaChart, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from "recharts";
@@ -478,13 +477,6 @@ export default function Dashboard() {
         <QuickActions
           hasIngredients={stats.totalIngredients > 0}
           hasRecipes={stats.totalRecipes > 0}
-        />
-
-        {/* Alerts Highlight */}
-        <AlertsHighlight
-          unreadAlerts={stats.unreadAlerts}
-          lowStockCount={stats.lowStockCount}
-          recentAlerts={recentAlerts}
         />
 
         {/* Weekly Insights */}
