@@ -12,6 +12,7 @@ import { toast } from "@/hooks/use-toast";
 import { Calculator, TrendingUp, MapPin, DollarSign, History, Save, Info, Trash2 } from "lucide-react";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { StatsSkeleton } from "@/components/SkeletonLoader";
+import { CepLookup } from "@/components/CepLookup";
 
 type Recipe = {
   id: string;
@@ -543,7 +544,16 @@ export default function Pricing() {
                           </Badge>
                         </div>
                       </div>
-                      <div className="space-y-2">
+                      
+                      <div className="border-t pt-4 mt-4">
+                        <CepLookup
+                          onFactorChange={(factor, state, city) => {
+                            setConfig({ ...config, regional_factor: factor });
+                          }}
+                        />
+                      </div>
+
+                      <div className="space-y-2 border-t pt-4">
                         <Label>Fator Regional (ajuste manual)</Label>
                         <Input
                           type="number"
@@ -559,6 +569,9 @@ export default function Pricing() {
                           }}
                           required
                         />
+                        <p className="text-xs text-muted-foreground">
+                          Use este campo para ajustar manualmente caso necessário
+                        </p>
                       </div>
                     </div>
                   )}

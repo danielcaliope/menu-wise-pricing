@@ -511,6 +511,33 @@ export type Database = {
           },
         ]
       }
+      regional_factors: {
+        Row: {
+          created_at: string
+          factor: number
+          id: string
+          state_code: string
+          state_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          factor?: number
+          id?: string
+          state_code: string
+          state_name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          factor?: number
+          id?: string
+          state_code?: string
+          state_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       sales: {
         Row: {
           cost_per_unit: number
