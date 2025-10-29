@@ -1,1 +1,7 @@
 project_id = "tjzdvxihthqywinrsurb"
+
+[functions.ifood-auth]
+verify_jwt = true
+
+[functions.ifood-sync-orders]
+verify_jwt = true

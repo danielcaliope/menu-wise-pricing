@@ -1,4 +1,4 @@
-import { LayoutDashboard, Package, FileText, Tag, DollarSign, Settings, LogOut, PackageCheck, Bell, BarChart3, FileSpreadsheet, MenuSquare, Building2, ShoppingCart } from "lucide-react";
+import { LayoutDashboard, Package, FileText, Tag, DollarSign, Settings, LogOut, PackageCheck, Bell, BarChart3, FileSpreadsheet, MenuSquare, Building2, ShoppingCart, ShoppingBag, Plug } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -28,6 +28,11 @@ const navigation = [
   { title: "Vendas", url: "/sales", icon: ShoppingCart },
   { title: "Relatórios", url: "/reports", icon: FileSpreadsheet },
   { title: "Cardápio Digital", url: "/menu", icon: MenuSquare },
+];
+
+const integrations = [
+  { title: "Configuração iFood", url: "/ifood-settings", icon: Plug },
+  { title: "Pedidos iFood", url: "/ifood-orders", icon: ShoppingBag },
 ];
 
 export function AppSidebar() {
@@ -63,6 +68,31 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {navigation.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <NavLink
+                      to={item.url}
+                      className={({ isActive }) =>
+                        isActive
+                          ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                          : "hover:bg-sidebar-accent/50"
+                      }
+                    >
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Integrações</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {integrations.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink

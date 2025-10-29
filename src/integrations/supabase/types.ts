@@ -163,6 +163,114 @@ export type Database = {
         }
         Relationships: []
       }
+      ifood_config: {
+        Row: {
+          access_token: string | null
+          client_id: string
+          client_secret: string
+          created_at: string
+          id: string
+          is_active: boolean
+          merchant_id: string | null
+          refresh_token: string | null
+          token_expires_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token?: string | null
+          client_id: string
+          client_secret: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          merchant_id?: string | null
+          refresh_token?: string | null
+          token_expires_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string | null
+          client_id?: string
+          client_secret?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          merchant_id?: string | null
+          refresh_token?: string | null
+          token_expires_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ifood_orders: {
+        Row: {
+          benefits: Json | null
+          created_at: string
+          created_at_ifood: string
+          customer: Json
+          delivery_address: Json | null
+          delivery_fee: number | null
+          id: string
+          ifood_order_id: string
+          items: Json
+          merchant_id: string
+          order_status: string
+          order_timing: string | null
+          order_type: string
+          payments: Json
+          sub_total: number
+          synced_to_sales: boolean
+          total_amount: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          benefits?: Json | null
+          created_at?: string
+          created_at_ifood: string
+          customer: Json
+          delivery_address?: Json | null
+          delivery_fee?: number | null
+          id?: string
+          ifood_order_id: string
+          items: Json
+          merchant_id: string
+          order_status?: string
+          order_timing?: string | null
+          order_type: string
+          payments: Json
+          sub_total: number
+          synced_to_sales?: boolean
+          total_amount: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          benefits?: Json | null
+          created_at?: string
+          created_at_ifood?: string
+          customer?: Json
+          delivery_address?: Json | null
+          delivery_fee?: number | null
+          id?: string
+          ifood_order_id?: string
+          items?: Json
+          merchant_id?: string
+          order_status?: string
+          order_timing?: string | null
+          order_type?: string
+          payments?: Json
+          sub_total?: number
+          synced_to_sales?: boolean
+          total_amount?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       indirect_costs: {
         Row: {
           amount: number
