@@ -4,4 +4,4 @@ project_id = "tjzdvxihthqywinrsurb"
 verify_jwt = true
 
 [functions.ifood-sync-orders]
-verify_jwt = true
+verify_jwt = false
