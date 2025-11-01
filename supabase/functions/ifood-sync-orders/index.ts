@@ -23,9 +23,18 @@ Deno.serve(async (req) => {
       // Not JSON, probably a manual call
     }
 
-    // If empty request (connection test from iFood), return success
+    // If empty request or KEEPALIVE (connection test from iFood), return success
     if (!body || body === '[]') {
-      console.log('Connection test received');
+      console.log('Empty request received');
+      return new Response(null, {
+        status: 202,
+        headers: corsHeaders,
+      });
+    }
+
+    // Check if this is a KEEPALIVE event
+    if (webhookData && (webhookData.code === 'KEEPALIVE' || webhookData.fullCode === 'KEEPALIVE')) {
+      console.log('KEEPALIVE event received');
       return new Response(null, {
         status: 202,
         headers: corsHeaders,
