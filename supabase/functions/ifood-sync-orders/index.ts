@@ -26,8 +26,9 @@ Deno.serve(async (req) => {
     // If empty request (connection test from iFood), return success
     if (!body || body === '[]') {
       console.log('Connection test received');
-      return new Response(JSON.stringify({ success: true, message: 'Connection test successful' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      return new Response(null, {
+        status: 202,
+        headers: corsHeaders,
       });
     }
 
@@ -239,7 +240,10 @@ Deno.serve(async (req) => {
         orders: newOrders,
         source: isWebhook ? 'webhook' : 'manual',
       }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { 
+        status: 202,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
     );
 
   } catch (error) {
