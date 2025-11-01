@@ -23,6 +23,14 @@ Deno.serve(async (req) => {
       // Not JSON, probably a manual call
     }
 
+    // If empty request (connection test from iFood), return success
+    if (!body || body === '[]') {
+      console.log('Connection test received');
+      return new Response(JSON.stringify({ success: true, message: 'Connection test successful' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // Check if this is a webhook from iFood
     const isWebhook = webhookData && Array.isArray(webhookData) && webhookData.length > 0 && webhookData[0].code;
     
