@@ -11,6 +11,13 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
+  // Health-checks / URL validation from provider
+  if (req.method === 'GET' || req.method === 'HEAD') {
+    return new Response('OK', {
+      status: 200,
+      headers: { ...corsHeaders, 'Content-Type': 'text/plain' },
+    });
+  }
 
   try {
     // Parse request body to check if it's a webhook
