@@ -1,4 +1,4 @@
-import { LayoutDashboard, Package, FileText, Tag, DollarSign, Settings, LogOut, PackageCheck, Bell, BarChart3, FileSpreadsheet, MenuSquare, Building2, ShoppingCart, ShoppingBag, Plug } from "lucide-react";
+import { LayoutDashboard, Package, FileText, Tag, DollarSign, Settings, LogOut, PackageCheck, Bell, BarChart3, FileSpreadsheet, MenuSquare, Building2, ShoppingCart, ShoppingBag, Plug, Bug } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -33,6 +33,7 @@ const navigation = [
 const integrations = [
   { title: "Configuração iFood", url: "/ifood-settings", icon: Plug },
   { title: "Pedidos iFood", url: "/ifood-orders", icon: ShoppingBag },
+  { title: "Debug iFood", url: "/ifood-debug", icon: Bug },
 ];
 
 export function AppSidebar() {
