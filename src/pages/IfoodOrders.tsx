@@ -20,6 +20,35 @@ export default function IfoodOrders() {
 
   useEffect(() => {
     loadOrders();
+
+    // Setup realtime subscription for new orders
+    const channel = supabase
+      .channel('ifood_orders_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'ifood_orders'
+        },
+        (payload) => {
+          console.log('New iFood order received:', payload);
+          
+          // Show toast notification
+          toast({
+            title: "🛵 Novo Pedido iFood!",
+            description: `Pedido #${payload.new.ifood_order_id.slice(-8)} - R$ ${payload.new.total_amount.toFixed(2)}`,
+          });
+          
+          // Reload orders to show the new one
+          loadOrders();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const loadOrders = async () => {
