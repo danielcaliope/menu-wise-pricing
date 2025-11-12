@@ -5,14 +5,18 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Loader2, RefreshCw, Package, User, MapPin } from "lucide-react";
+import { Loader2, RefreshCw, Package, User, MapPin, ShoppingCart, Link2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { IfoodProductMapping } from "@/components/IfoodProductMapping";
 
 export default function IfoodOrders() {
   const { toast } = useToast();
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
+  const [syncingToSales, setSyncingToSales] = useState(false);
+  const [mappingDialogOpen, setMappingDialogOpen] = useState(false);
+  const [unmappedProducts, setUnmappedProducts] = useState<string[]>([]);
 
   useEffect(() => {
     loadOrders();
@@ -84,6 +88,169 @@ export default function IfoodOrders() {
     return colors[status] || 'bg-gray-500';
   };
 
+  const checkUnmappedProducts = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return [];
+
+      // Get all unique product names from orders
+      const productNames = new Set<string>();
+      orders.forEach(order => {
+        order.items.forEach((item: any) => {
+          productNames.add(item.name);
+        });
+      });
+
+      // Get existing mappings
+      const { data: mappings } = await supabase
+        .from('ifood_product_mappings')
+        .select('product_name')
+        .eq('user_id', user.id);
+
+      const mappedProducts = new Set(mappings?.map(m => m.product_name) || []);
+      const unmapped = Array.from(productNames).filter(name => !mappedProducts.has(name));
+      
+      return unmapped;
+    } catch (error) {
+      console.error('Error checking unmapped products:', error);
+      return [];
+    }
+  };
+
+  const handleSyncToSales = async () => {
+    // Check for unmapped products first
+    const unmapped = await checkUnmappedProducts();
+    
+    if (unmapped.length > 0) {
+      setUnmappedProducts(unmapped);
+      setMappingDialogOpen(true);
+      return;
+    }
+
+    await syncOrdersToSales();
+  };
+
+  const syncOrdersToSales = async () => {
+    setSyncingToSales(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Não autenticado');
+
+      // Get orders not synced yet
+      const ordersToSync = orders.filter(o => !o.synced_to_sales);
+      
+      if (ordersToSync.length === 0) {
+        toast({
+          title: "Nenhum pedido para sincronizar",
+          description: "Todos os pedidos já foram sincronizados",
+        });
+        return;
+      }
+
+      // Get mappings
+      const { data: mappings } = await supabase
+        .from('ifood_product_mappings')
+        .select('product_name, recipe_id')
+        .eq('user_id', user.id);
+
+      const mappingMap = new Map(mappings?.map(m => [m.product_name, m.recipe_id]));
+
+      // Get pricing for all recipes
+      const recipeIds = Array.from(new Set(mappings?.map(m => m.recipe_id)));
+      const { data: pricingData } = await supabase
+        .from('pricing_history')
+        .select('recipe_id, recipe_cost, price_with_delivery, price_without_delivery')
+        .eq('user_id', user.id)
+        .in('recipe_id', recipeIds);
+
+      const pricingMap = new Map(
+        pricingData?.map(p => [p.recipe_id, p])
+      );
+
+      let syncedCount = 0;
+      let errorCount = 0;
+
+      // Process each order
+      for (const order of ordersToSync) {
+        try {
+          // Process each item in the order
+          for (const item of order.items) {
+            const recipeId = mappingMap.get(item.name);
+            if (!recipeId) {
+              console.warn(`No mapping found for product: ${item.name}`);
+              errorCount++;
+              continue;
+            }
+
+            const pricing = pricingMap.get(recipeId);
+            if (!pricing) {
+              console.warn(`No pricing found for recipe: ${recipeId}`);
+              errorCount++;
+              continue;
+            }
+
+            const hasDelivery = order.delivery_fee > 0;
+            const costPerUnit = pricing.recipe_cost;
+            const unitPrice = item.unitPrice || (item.totalPrice / item.quantity);
+            const totalCost = costPerUnit * item.quantity;
+            const totalAmount = item.totalPrice;
+            const profit = totalAmount - totalCost;
+
+            // Insert into sales
+            const { error: salesError } = await supabase
+              .from('sales')
+              .insert({
+                user_id: user.id,
+                recipe_id: recipeId,
+                quantity: item.quantity,
+                unit_price: unitPrice,
+                total_amount: totalAmount,
+                cost_per_unit: costPerUnit,
+                total_cost: totalCost,
+                profit: profit,
+                with_delivery: hasDelivery,
+                discount_percentage: 0,
+                final_price: totalAmount,
+                customer_name: order.customer.name,
+                notes: `Pedido iFood #${order.ifood_order_id.slice(-8)}`,
+                sale_date: order.created_at_ifood,
+              });
+
+            if (salesError) throw salesError;
+            syncedCount++;
+          }
+
+          // Mark order as synced
+          const { error: updateError } = await supabase
+            .from('ifood_orders')
+            .update({ synced_to_sales: true })
+            .eq('id', order.id);
+
+          if (updateError) throw updateError;
+        } catch (error) {
+          console.error(`Error syncing order ${order.id}:`, error);
+          errorCount++;
+        }
+      }
+
+      toast({
+        title: "Sincronização concluída!",
+        description: `${syncedCount} itens sincronizados${errorCount > 0 ? `, ${errorCount} erros` : ''}`,
+      });
+
+      await loadOrders();
+    } catch (error: any) {
+      console.error('Error syncing to sales:', error);
+      toast({
+        title: "Erro",
+        description: error.message || "Falha ao sincronizar vendas",
+        variant: "destructive",
+      });
+    } finally {
+      setSyncingToSales(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -101,15 +268,32 @@ export default function IfoodOrders() {
             Gerencie seus pedidos recebidos do iFood
           </p>
         </div>
-        <Button onClick={handleSync} disabled={syncing}>
-          {syncing ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <RefreshCw className="mr-2 h-4 w-4" />
-          )}
-          Sincronizar
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={handleSyncToSales} disabled={syncingToSales || orders.length === 0}>
+            {syncingToSales ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <ShoppingCart className="mr-2 h-4 w-4" />
+            )}
+            Sincronizar com Vendas
+          </Button>
+          <Button onClick={handleSync} disabled={syncing} variant="outline">
+            {syncing ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCw className="mr-2 h-4 w-4" />
+            )}
+            Buscar Pedidos
+          </Button>
+        </div>
       </div>
+
+      <IfoodProductMapping
+        open={mappingDialogOpen}
+        onOpenChange={setMappingDialogOpen}
+        unmappedProducts={unmappedProducts}
+        onMappingComplete={() => syncOrdersToSales()}
+      />
 
       {orders.length === 0 ? (
         <Card>
