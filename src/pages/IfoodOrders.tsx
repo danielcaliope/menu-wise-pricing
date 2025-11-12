@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Layout } from "@/components/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -282,14 +283,17 @@ export default function IfoodOrders() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="w-8 h-8 animate-spin" />
-      </div>
+      <Layout>
+        <div className="flex items-center justify-center min-h-screen">
+          <Loader2 className="w-8 h-8 animate-spin" />
+        </div>
+      </Layout>
     );
   }
 
   return (
-    <div className="container mx-auto p-6">
+    <Layout>
+      <div>
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold mb-2">Pedidos iFood</h1>
@@ -430,6 +434,7 @@ export default function IfoodOrders() {
           ))}
         </div>
       )}
-    </div>
+      </div>
+    </Layout>
   );
 }
