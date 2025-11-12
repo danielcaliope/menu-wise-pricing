@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Layout } from "@/components/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -119,7 +120,8 @@ export default function IfoodSettings() {
     : true;
 
   return (
-    <div className="container mx-auto p-6 max-w-4xl">
+    <Layout>
+      <div className="container mx-auto max-w-4xl">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Integração iFood</h1>
         <p className="text-muted-foreground">
@@ -231,6 +233,7 @@ export default function IfoodSettings() {
           <li>Cole as credenciais acima e clique em "Conectar com iFood"</li>
         </ol>
       </div>
-    </div>
+      </div>
+    </Layout>
   );
 }
