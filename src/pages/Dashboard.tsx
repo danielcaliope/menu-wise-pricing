@@ -39,6 +39,7 @@ export default function Dashboard() {
     totalRecipes: 0,
     averageCost: 0,
     totalPricings: 0,
+    totalIndirectCosts: 0,
     lowStockCount: 0,
     unreadAlerts: 0,
     totalSales: 0,
