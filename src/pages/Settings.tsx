@@ -41,6 +41,7 @@ const profileSchema = z.object({
 export default function Settings() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [showTour, setShowTour] = useState(false);
   const [profile, setProfile] = useState({
     full_name: "",
     plan: "free",
