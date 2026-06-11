@@ -21,6 +21,7 @@ type Stats = {
   totalRecipes: number;
   averageCost: number;
   totalPricings: number;
+  totalIndirectCosts: number;
   lowStockCount: number;
   unreadAlerts: number;
   totalSales: number;
