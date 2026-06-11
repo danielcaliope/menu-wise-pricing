@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Package, ChefHat, Calculator, CheckCircle } from "lucide-react";
+import { Package, Tag, ChefHat, Building2, Calculator, ShoppingCart, CheckCircle } from "lucide-react";
 
 type OnboardingStep = {
   title: string;
@@ -14,60 +14,102 @@ type OnboardingStep = {
 const steps: OnboardingStep[] = [
   {
     title: "Bem-vindo ao MenuWise! 🎉",
-    description: "Vamos fazer um tour rápido para você aproveitar ao máximo o sistema de precificação inteligente.",
+    description: "Vamos fazer um tour rápido pela ordem ideal de configuração para você ter o sistema funcionando por completo.",
     icon: <CheckCircle className="h-16 w-16 text-primary" />,
   },
   {
     title: "1. Cadastre seus Ingredientes",
-    description: "Comece cadastrando todos os ingredientes que você usa, com seus custos unitários e fornecedores.",
+    description: "Comece cadastrando todos os ingredientes que você usa, com seus custos unitários e fornecedores. Essa é a base de tudo.",
     icon: <Package className="h-16 w-16 text-primary" />,
     route: "/ingredients",
   },
   {
-    title: "2. Crie suas Receitas",
-    description: "Monte suas receitas combinando ingredientes e definindo quantidades. Adicione porcentagem de desperdício e tempo de preparo.",
+    title: "2. Organize em Categorias (opcional)",
+    description: "Crie categorias para agrupar suas receitas (ex.: Bebidas, Sobremesas, Pizzas). Ajuda na organização do cardápio.",
+    icon: <Tag className="h-16 w-16 text-primary" />,
+    route: "/categories",
+  },
+  {
+    title: "3. Crie suas Receitas",
+    description: "Monte suas fichas técnicas combinando ingredientes e definindo quantidades, desperdício e tempo de preparo.",
     icon: <ChefHat className="h-16 w-16 text-primary" />,
     route: "/recipes",
   },
   {
-    title: "3. Calcule Preços Inteligentes",
-    description: "Use nossa calculadora para definir o preço ideal baseado em custos, margem de lucro, impostos e fator regional.",
+    title: "4. Informe os Custos Indiretos",
+    description: "Adicione custos como aluguel, energia e embalagens. Eles entram no cálculo do preço para garantir lucro real.",
+    icon: <Building2 className="h-16 w-16 text-primary" />,
+    route: "/indirect-costs",
+  },
+  {
+    title: "5. Calcule Preços Inteligentes",
+    description: "Use a calculadora para definir o preço ideal baseado em custos, margem de lucro, impostos e fator regional.",
     icon: <Calculator className="h-16 w-16 text-primary" />,
     route: "/pricing",
   },
+  {
+    title: "6. Registre suas Vendas",
+    description: "Acompanhe vendas, lucro e desempenho. Pronto: seu sistema está configurado e funcionando por completo!",
+    icon: <ShoppingCart className="h-16 w-16 text-primary" />,
+    route: "/sales",
+  },
 ];
 
-export function Onboarding() {
+const START_ROUTE = "/ingredients";
+
+interface OnboardingProps {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}
+
+export function Onboarding({ open: controlledOpen, onOpenChange }: OnboardingProps) {
   const navigate = useNavigate();
-  const [open, setOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const [internalOpen, setInternalOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
 
+  const open = isControlled ? controlledOpen : internalOpen;
+
+  const setOpen = (value: boolean) => {
+    if (isControlled) {
+      onOpenChange?.(value);
+    } else {
+      setInternalOpen(value);
+    }
+  };
+
   useEffect(() => {
-    // Check if user has already seen onboarding
+    if (isControlled) return;
     const hasSeenOnboarding = localStorage.getItem("hasSeenOnboarding");
     if (!hasSeenOnboarding) {
-      setOpen(true);
+      setInternalOpen(true);
     }
-  }, []);
+  }, [isControlled]);
+
+  // Reset to first step whenever the tour is reopened.
+  useEffect(() => {
+    if (open) setCurrentStep(0);
+  }, [open]);
 
   const handleNext = () => {
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
     } else {
-      handleFinish();
+      handleFinish(true);
     }
   };
 
   const handleSkip = () => {
-    handleFinish();
+    handleFinish(false);
   };
 
-  const handleFinish = () => {
+  const handleFinish = (navigateToStart: boolean) => {
     localStorage.setItem("hasSeenOnboarding", "true");
     setOpen(false);
-    // Navigate to ingredients to start
-    if (steps[currentStep].route) {
-      navigate(steps[currentStep].route);
+    if (navigateToStart) {
+      // Always send the user to a valid starting point.
+      const target = steps[currentStep]?.route ?? START_ROUTE;
+      navigate(target);
     }
   };
 
