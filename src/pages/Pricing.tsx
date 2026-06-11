@@ -13,6 +13,7 @@ import { Calculator, TrendingUp, MapPin, DollarSign, History, Save, Info, Trash2
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { StatsSkeleton } from "@/components/SkeletonLoader";
 import { CepLookup } from "@/components/CepLookup";
+import { PrerequisiteNotice } from "@/components/PrerequisiteNotice";
 
 type Recipe = {
   id: string;
