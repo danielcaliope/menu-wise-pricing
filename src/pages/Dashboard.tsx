@@ -117,6 +117,12 @@ export default function Dashboard() {
       .select("*", { count: "exact", head: true })
       .eq("user_id", userId);
 
+    // Count indirect costs
+    const { count: indirectCostsCount } = await supabase
+      .from("indirect_costs")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", userId);
+
     // Calculate average ingredient cost
     const { data: ingredients } = await supabase
       .from("ingredients")
