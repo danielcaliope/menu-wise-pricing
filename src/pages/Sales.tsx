@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PrerequisiteNotice } from "@/components/PrerequisiteNotice";
 import { Plus, Trash2, TrendingUp, DollarSign, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -423,6 +424,17 @@ const Sales = () => {
             </DialogContent>
           </Dialog>
         </div>
+
+        {recipes.length === 0 && (
+          <PrerequisiteNotice
+            title="Calcule preços primeiro"
+            description="Só é possível registrar vendas de receitas que já possuem precificação."
+            actionLabel="Ir para Precificação"
+            actionRoute="/pricing"
+          />
+        )}
+
+
 
         <div className="grid gap-4 md:grid-cols-3">
           <Card>

@@ -1,4 +1,4 @@
-import { LayoutDashboard, Package, FileText, Tag, DollarSign, Settings, LogOut, PackageCheck, Bell, BarChart3, FileSpreadsheet, MenuSquare, Building2, ShoppingCart, ShoppingBag, Plug, Bug } from "lucide-react";
+import { LayoutDashboard, Package, FileText, Tag, DollarSign, Settings, LogOut, PackageCheck, Bell, BarChart3, FileSpreadsheet, MenuSquare, Building2, ShoppingCart, ShoppingBag, Plug } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -15,25 +15,42 @@ import {
   SidebarFooter,
 } from "@/components/ui/sidebar";
 
-const navigation = [
-  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-  { title: "Ingredientes", url: "/ingredients", icon: Package },
-  { title: "Receitas / Pratos", url: "/recipes", icon: FileText },
-  { title: "Categorias", url: "/categories", icon: Tag },
-  { title: "Controle de Estoque", url: "/stock", icon: PackageCheck },
-  { title: "Precificação", url: "/pricing", icon: DollarSign },
-  { title: "Custos Indiretos", url: "/indirect-costs", icon: Building2 },
-  { title: "Alertas de Custos", url: "/cost-alerts", icon: Bell },
-  { title: "Análise Competitiva", url: "/competitive-analysis", icon: BarChart3 },
-  { title: "Vendas", url: "/sales", icon: ShoppingCart },
-  { title: "Relatórios", url: "/reports", icon: FileSpreadsheet },
-  { title: "Cardápio Digital", url: "/menu", icon: MenuSquare },
-];
+const dashboardItem = { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard };
 
-const integrations = [
-  { title: "Configuração iFood", url: "/ifood-settings", icon: Plug },
-  { title: "Pedidos iFood", url: "/ifood-orders", icon: ShoppingBag },
-  { title: "Debug iFood", url: "/ifood-debug", icon: Bug },
+const menuGroups = [
+  {
+    label: "Comece aqui",
+    items: [
+      { title: "1. Ingredientes", url: "/ingredients", icon: Package },
+      { title: "2. Categorias", url: "/categories", icon: Tag },
+      { title: "3. Receitas / Pratos", url: "/recipes", icon: FileText },
+      { title: "4. Custos Indiretos", url: "/indirect-costs", icon: Building2 },
+      { title: "5. Precificação", url: "/pricing", icon: DollarSign },
+    ],
+  },
+  {
+    label: "Operação",
+    items: [
+      { title: "Vendas", url: "/sales", icon: ShoppingCart },
+      { title: "Controle de Estoque", url: "/stock", icon: PackageCheck },
+      { title: "Cardápio Digital", url: "/menu", icon: MenuSquare },
+    ],
+  },
+  {
+    label: "Análises",
+    items: [
+      { title: "Alertas de Custos", url: "/cost-alerts", icon: Bell },
+      { title: "Análise Competitiva", url: "/competitive-analysis", icon: BarChart3 },
+      { title: "Relatórios", url: "/reports", icon: FileSpreadsheet },
+    ],
+  },
+  {
+    label: "Integrações",
+    items: [
+      { title: "Configuração iFood", url: "/ifood-settings", icon: Plug },
+      { title: "Pedidos iFood", url: "/ifood-orders", icon: ShoppingBag },
+    ],
+  },
 ];
 
 export function AppSidebar() {
@@ -52,6 +69,11 @@ export function AppSidebar() {
     }
   };
 
+  const navClass = ({ isActive }: { isActive: boolean }) =>
+    isActive
+      ? "bg-sidebar-accent text-sidebar-accent-foreground"
+      : "hover:bg-sidebar-accent/50";
+
   return (
     <Sidebar className="border-r border-border">
       <SidebarHeader className="border-b border-border p-4">
@@ -65,54 +87,39 @@ export function AppSidebar() {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Menu Principal</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navigation.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink
-                      to={item.url}
-                      className={({ isActive }) =>
-                        isActive
-                          ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                          : "hover:bg-sidebar-accent/50"
-                      }
-                    >
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <NavLink to={dashboardItem.url} className={navClass}>
+                    <dashboardItem.icon className="h-4 w-4" />
+                    <span>{dashboardItem.title}</span>
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarGroup>
-          <SidebarGroupLabel>Integrações</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {integrations.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink
-                      to={item.url}
-                      className={({ isActive }) =>
-                        isActive
-                          ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                          : "hover:bg-sidebar-accent/50"
-                      }
-                    >
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {menuGroups.map((group) => (
+          <SidebarGroup key={group.label}>
+            <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {group.items.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <NavLink to={item.url} className={navClass}>
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.title}</span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
       </SidebarContent>
 
       <SidebarFooter className="border-t border-border p-4">

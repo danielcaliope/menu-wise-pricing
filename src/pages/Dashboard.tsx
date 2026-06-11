@@ -21,6 +21,7 @@ type Stats = {
   totalRecipes: number;
   averageCost: number;
   totalPricings: number;
+  totalIndirectCosts: number;
   lowStockCount: number;
   unreadAlerts: number;
   totalSales: number;
@@ -38,6 +39,7 @@ export default function Dashboard() {
     totalRecipes: 0,
     averageCost: 0,
     totalPricings: 0,
+    totalIndirectCosts: 0,
     lowStockCount: 0,
     unreadAlerts: 0,
     totalSales: 0,
@@ -115,6 +117,12 @@ export default function Dashboard() {
       .select("*", { count: "exact", head: true })
       .eq("user_id", userId);
 
+    // Count indirect costs
+    const { count: indirectCostsCount } = await supabase
+      .from("indirect_costs")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", userId);
+
     // Calculate average ingredient cost
     const { data: ingredients } = await supabase
       .from("ingredients")
@@ -156,6 +164,7 @@ export default function Dashboard() {
       totalRecipes: recipesCount || 0,
       averageCost: avgCost,
       totalPricings: pricingsCount || 0,
+      totalIndirectCosts: indirectCostsCount || 0,
       lowStockCount: lowStock,
       unreadAlerts: unreadCount || 0,
       totalSales: totalSalesCount,
@@ -469,6 +478,7 @@ export default function Dashboard() {
         <SetupProgress
           hasIngredients={stats.totalIngredients > 0}
           hasRecipes={stats.totalRecipes > 0}
+          hasIndirectCosts={stats.totalIndirectCosts > 0}
           hasPricings={stats.totalPricings > 0}
           hasSales={stats.totalSales > 0}
         />
