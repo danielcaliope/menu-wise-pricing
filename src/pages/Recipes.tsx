@@ -20,6 +20,7 @@ import { SearchBar } from "@/components/SearchBar";
 import { EmptyState } from "@/components/EmptyState";
 import { TableSkeleton } from "@/components/SkeletonLoader";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { PrerequisiteNotice } from "@/components/PrerequisiteNotice";
 
 // Validação de segurança para prevenir injection attacks
 const recipeSchema = z.object({
