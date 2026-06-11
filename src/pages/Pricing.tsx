@@ -364,16 +364,12 @@ export default function Pricing() {
         </div>
 
         {recipes.length === 0 && (
-          <Card className="border-warning bg-warning/5">
-            <CardContent className="pt-6">
-              <p className="text-center text-muted-foreground">
-                Você precisa criar fichas técnicas antes de fazer a precificação.
-                <Button variant="link" onClick={() => navigate("/recipes")} className="ml-2">
-                  Ir para Receitas / Pratos
-                </Button>
-              </p>
-            </CardContent>
-          </Card>
+          <PrerequisiteNotice
+            title="Crie receitas primeiro"
+            description="Você precisa ter fichas técnicas criadas para calcular a precificação."
+            actionLabel="Ir para Receitas / Pratos"
+            actionRoute="/recipes"
+          />
         )}
 
         <Card>
