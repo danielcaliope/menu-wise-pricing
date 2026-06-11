@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PrerequisiteNotice } from "@/components/PrerequisiteNotice";
 import { Plus, Trash2, TrendingUp, DollarSign, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
