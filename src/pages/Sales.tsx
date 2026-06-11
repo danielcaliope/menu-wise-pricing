@@ -424,6 +424,17 @@ const Sales = () => {
           </Dialog>
         </div>
 
+        {recipes.length === 0 && (
+          <PrerequisiteNotice
+            title="Calcule preços primeiro"
+            description="Só é possível registrar vendas de receitas que já possuem precificação."
+            actionLabel="Ir para Precificação"
+            actionRoute="/pricing"
+          />
+        )}
+
+
+
         <div className="grid gap-4 md:grid-cols-3">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
