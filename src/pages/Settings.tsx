@@ -172,6 +172,7 @@ export default function Settings() {
 
   return (
     <Layout>
+      <Onboarding open={showTour} onOpenChange={setShowTour} />
       <div className="space-y-6 animate-fade-in max-w-2xl">
         <Breadcrumbs items={[{ label: "Configurações" }]} />
         
@@ -181,6 +182,22 @@ export default function Settings() {
             Gerencie seu perfil e configurações da conta
           </p>
         </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Tutorial de Configuração</CardTitle>
+            <CardDescription>
+              Reveja o passo a passo para deixar o sistema funcionando por completo
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button variant="outline" onClick={() => setShowTour(true)} className="gap-2">
+              <GraduationCap className="h-4 w-4" />
+              Ver tutorial novamente
+            </Button>
+          </CardContent>
+        </Card>
+
 
         <Card>
           <CardHeader>
