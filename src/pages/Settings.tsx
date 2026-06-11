@@ -11,6 +11,8 @@ import { toast } from "@/hooks/use-toast";
 import { z } from "zod";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { StatsSkeleton } from "@/components/SkeletonLoader";
+import { Onboarding } from "@/components/Onboarding";
+import { GraduationCap } from "lucide-react";
 
 // Validação de segurança para prevenir SQL injection e code injection
 const profileSchema = z.object({
