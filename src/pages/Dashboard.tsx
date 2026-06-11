@@ -164,6 +164,7 @@ export default function Dashboard() {
       totalRecipes: recipesCount || 0,
       averageCost: avgCost,
       totalPricings: pricingsCount || 0,
+      totalIndirectCosts: indirectCostsCount || 0,
       lowStockCount: lowStock,
       unreadAlerts: unreadCount || 0,
       totalSales: totalSalesCount,
