@@ -433,20 +433,12 @@ export default function Recipes() {
         </div>
 
         {ingredients.length === 0 && (
-          <Card className="border-warning bg-warning/5">
-            <CardContent className="pt-6">
-              <p className="text-center text-muted-foreground">
-                Você precisa cadastrar ingredientes antes de criar receitas.
-                <Button
-                  variant="link"
-                  onClick={() => navigate("/ingredients")}
-                  className="ml-2"
-                >
-                  Ir para Ingredientes
-                </Button>
-              </p>
-            </CardContent>
-          </Card>
+          <PrerequisiteNotice
+            title="Cadastre ingredientes primeiro"
+            description="Você precisa ter ingredientes cadastrados para montar suas receitas."
+            actionLabel="Ir para Ingredientes"
+            actionRoute="/ingredients"
+          />
         )}
 
         <Card>
