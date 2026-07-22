@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardContent } from "@/components/ui/card";
 import { Calculator } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { calculateIngredientCost as calculateIngredientsCostDomain } from "@/domain/pricing";
 
 type RecipeIngredient = {
   id: string;
@@ -77,9 +78,16 @@ export function PortionCalculator({
   };
 
   const calculateTotalCost = () => {
-    return recipeIngredients.reduce((sum, item) => {
-      return sum + calculateIngredientCost(item.quantity, item.ingredients.unit_cost);
-    }, 0);
+    // Nota: soma só o custo dos ingredientes já escalados por porção (sem perda%/
+    // custos indiretos) — mesmo valor que esta calculadora sempre mostrou. Ver
+    // divergência documentada no plano (Pricing.tsx usa a fórmula completa pro
+    // mesmo prato); não alterada aqui, só extraída pro módulo de domínio.
+    return calculateIngredientsCostDomain(
+      recipeIngredients.map((item) => ({
+        quantity: calculateAdjustedQuantity(item.quantity),
+        unitCost: item.ingredients.unit_cost,
+      })),
+    );
   };
 
   const costPerServing = calculateTotalCost() / (desiredServings || 1);

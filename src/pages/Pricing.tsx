@@ -14,19 +14,17 @@ import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { StatsSkeleton } from "@/components/SkeletonLoader";
 import { CepLookup } from "@/components/CepLookup";
 import { PrerequisiteNotice } from "@/components/PrerequisiteNotice";
+import {
+  calculateRecipeCost as calculateRecipeCostDomain,
+  calculateRecommendedPrice as calculateRecommendedPriceDomain,
+  calculateDeliveryInclusivePrice,
+} from "@/domain/pricing";
+import { usePricingConfig, type PricingConfig } from "@/hooks/usePricingConfig";
 
 type Recipe = {
   id: string;
   name: string;
   waste_percentage: number;
-};
-
-type PricingConfig = {
-  profit_margin_percentage: number;
-  tax_percentage: number;
-  regional_factor: number;
-  income_level: string;
-  delivery_fee_percentage: number;
 };
 
 type PricingHistoryItem = {
@@ -51,13 +49,9 @@ export default function Pricing() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [selectedRecipeId, setSelectedRecipeId] = useState("");
   const [recipeCost, setRecipeCost] = useState(0);
-  const [config, setConfig] = useState<PricingConfig>({
-    profit_margin_percentage: 30,
-    tax_percentage: 15,
-    regional_factor: 1.0,
-    income_level: "medium",
-    delivery_fee_percentage: 0,
-  });
+  const { config: persistedConfig, isLoading: loadingConfig, saveConfig } = usePricingConfig();
+  const [config, setConfig] = useState<PricingConfig>(persistedConfig);
+  const [configLoaded, setConfigLoaded] = useState(false);
   const [suggestedPrice, setSuggestedPrice] = useState(0);
   const [profile, setProfile] = useState<any>(null);
   const [pricingHistory, setPricingHistory] = useState<PricingHistoryItem[]>([]);
@@ -74,6 +68,13 @@ export default function Pricing() {
   }, [selectedRecipeId]);
 
   useEffect(() => {
+    if (!configLoaded && !loadingConfig) {
+      setConfig(persistedConfig);
+      setConfigLoaded(true);
+    }
+  }, [loadingConfig, persistedConfig, configLoaded]);
+
+  useEffect(() => {
     calculateSuggestedPrice();
   }, [recipeCost, config]);
 
@@ -88,7 +89,6 @@ export default function Pricing() {
 
     await Promise.all([
       fetchRecipes(),
-      fetchPricingConfig(session.user.id),
       fetchProfile(session.user.id),
       fetchPricingHistory(session.user.id),
     ]);
@@ -134,23 +134,6 @@ export default function Pricing() {
     setLoading(false);
   };
 
-  const fetchPricingConfig = async (userId: string) => {
-    const { data, error } = await supabase.from("pricing_configs").select("*").eq("user_id", userId).maybeSingle();
-
-    if (data) {
-      setConfig({
-        profit_margin_percentage: Number(data.profit_margin_percentage),
-        tax_percentage: Number(data.tax_percentage),
-        regional_factor: Number(data.regional_factor),
-        income_level: data.income_level || "medium",
-        delivery_fee_percentage: Number(data.delivery_fee_percentage || 0),
-      });
-    } else if (!error) {
-      // Create default config
-      await supabase.from("pricing_configs").insert([{ user_id: userId }]);
-    }
-  };
-
   const calculateRecipeCost = async (recipeId: string) => {
     const recipe = recipes.find((r) => r.id === recipeId);
     if (!recipe) return;
@@ -185,21 +168,21 @@ export default function Pricing() {
       console.error("Error fetching indirect costs:", indirectCostsError);
     }
 
-    // Calculate base ingredient cost
-    const baseCost = ((ingredientsData as any) || []).reduce((sum: number, ri: any) => {
-      return sum + ri.quantity * ri.ingredients.unit_cost;
-    }, 0);
+    // Custo da receita: agora calculado por src/domain/pricing (calculateRecipeCost),
+    // mesma fórmula de antes (ingredientes com perda% + custos indiretos), só extraída
+    // pra um módulo puro testável.
+    type RecipeIngredientRow = { quantity: number; ingredients: { unit_cost: number } };
+    const ingredientLines = ((ingredientsData as RecipeIngredientRow[]) || []).map((ri) => ({
+      quantity: ri.quantity,
+      unitCost: ri.ingredients.unit_cost,
+    }));
+    const indirectCostAmounts = (indirectCostsData || []).map((cost) => Number(cost.amount));
 
-    // Calculate total indirect costs
-    const indirectCostsTotal = (indirectCostsData || []).reduce((sum: number, cost: any) => {
-      return sum + Number(cost.amount);
-    }, 0);
-
-    // Apply waste percentage to ingredient costs only
-    const costWithWaste = baseCost * (1 + recipe.waste_percentage / 100);
-
-    // Total cost = ingredient cost with waste + indirect costs
-    const totalCost = costWithWaste + indirectCostsTotal;
+    const { totalCost } = calculateRecipeCostDomain({
+      ingredients: ingredientLines,
+      wastePercentage: recipe.waste_percentage,
+      indirectCosts: indirectCostAmounts,
+    });
 
     setRecipeCost(totalCost);
   };
@@ -210,46 +193,33 @@ export default function Pricing() {
       return;
     }
 
-    // Check if user has paid plan for regional factor
+    // Check if user has paid plan for regional factor (gate de plano — decisão de UI,
+    // fica fora do módulo de domínio, que só recebe o fator já resolvido)
     const effectiveFactor = profile?.plan === "paid" ? config.regional_factor : 1.0;
 
-    // Formula: (Custo + Lucro + Impostos) * Fator Regional
-    const costWithProfit = recipeCost * (1 + config.profit_margin_percentage / 100);
-    const costWithTax = costWithProfit * (1 + config.tax_percentage / 100);
-    const finalPrice = costWithTax * effectiveFactor;
+    // Formula: (Custo + Lucro + Impostos) * Fator Regional — agora via
+    // src/domain/pricing (calculateRecommendedPrice), mesma fórmula de antes.
+    const { recommendedPrice } = calculateRecommendedPriceDomain({
+      recipeCost,
+      profitMarginPercentage: config.profit_margin_percentage,
+      taxPercentage: config.tax_percentage,
+      regionalFactor: effectiveFactor,
+    });
 
-    setSuggestedPrice(finalPrice);
+    setSuggestedPrice(recommendedPrice);
   };
 
   const handleSaveConfig = async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const { error } = await supabase.from("pricing_configs").upsert(
-      {
-        user_id: user.id,
-        profit_margin_percentage: config.profit_margin_percentage,
-        tax_percentage: config.tax_percentage,
-        regional_factor: config.regional_factor,
-        income_level: config.income_level,
-        delivery_fee_percentage: config.delivery_fee_percentage,
-      },
-      {
-        onConflict: "user_id",
-      },
-    );
-
-    if (error) {
-      toast({
-        title: "Erro ao salvar",
-        description: error.message,
-        variant: "destructive",
-      });
-    } else {
+    try {
+      await saveConfig.mutateAsync(config);
       toast({ title: "Configurações salvas com sucesso!" });
       calculateSuggestedPrice();
+    } catch (error) {
+      toast({
+        title: "Erro ao salvar",
+        description: error instanceof Error ? error.message : String(error),
+        variant: "destructive",
+      });
     }
   };
 
@@ -284,7 +254,10 @@ export default function Pricing() {
     const selectedRecipe = recipes.find((r) => r.id === selectedRecipeId);
     if (!selectedRecipe) return;
 
-    const priceWithDelivery = suggestedPrice * (1 + config.delivery_fee_percentage / 100);
+    const { priceWithDelivery } = calculateDeliveryInclusivePrice({
+      price: suggestedPrice,
+      deliveryFeePercentage: config.delivery_fee_percentage,
+    });
 
     const { error } = await supabase.from("pricing_history").insert([
       {
@@ -351,6 +324,10 @@ export default function Pricing() {
 
   const profitAmount = recipeCost * (config.profit_margin_percentage / 100);
   const taxAmount = (recipeCost + profitAmount) * (config.tax_percentage / 100);
+  const deliveryInclusive = calculateDeliveryInclusivePrice({
+    price: suggestedPrice,
+    deliveryFeePercentage: config.delivery_fee_percentage,
+  });
 
   return (
     <Layout>
@@ -601,7 +578,7 @@ export default function Pricing() {
                   <div className="text-center p-6 bg-primary rounded-lg border-2 border-primary">
                     <p className="text-sm text-primary-foreground mb-2">Preço Com Delivery</p>
                     <p className="text-3xl font-bold text-primary-foreground">
-                      R$ {(suggestedPrice * (1 + config.delivery_fee_percentage / 100)).toFixed(2)}
+                      R$ {deliveryInclusive.priceWithDelivery.toFixed(2)}
                     </p>
                     {config.delivery_fee_percentage > 0 && (
                       <p className="text-xs text-primary-foreground mt-1">+{config.delivery_fee_percentage}% taxa delivery</p>
@@ -640,14 +617,14 @@ export default function Pricing() {
                       <div className="flex justify-between text-sm">
                         <span>+ Taxa Delivery ({config.delivery_fee_percentage}%):</span>
                         <span className="font-medium text-primary">
-                          + R$ {(suggestedPrice * (config.delivery_fee_percentage / 100)).toFixed(2)}
+                          + R$ {deliveryInclusive.feeAmount.toFixed(2)}
                         </span>
                       </div>
                       <div className="border-t pt-3">
                         <div className="flex justify-between font-semibold">
                           <span>Preço Com Delivery:</span>
                           <span className="text-primary text-lg">
-                            R$ {(suggestedPrice * (1 + config.delivery_fee_percentage / 100)).toFixed(2)}
+                            R$ {deliveryInclusive.priceWithDelivery.toFixed(2)}
                           </span>
                         </div>
                       </div>

@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Trash2, Building2, Package, DollarSign, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { useRecipeIndirectCosts } from "@/hooks/useRecipeIndirectCosts";
 
 type IndirectCost = {
   id: string;
@@ -22,24 +23,12 @@ type IndirectCost = {
   created_at: string;
 };
 
-type RecipeIndirectCost = {
-  id: string;
-  recipe_id: string;
-  cost_name: string;
-  amount: number;
-  cost_type: "packaging" | "labor" | "other";
-  notes: string | null;
-  recipes?: {
-    name: string;
-  };
-};
-
 const IndirectCosts = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [indirectCosts, setIndirectCosts] = useState<IndirectCost[]>([]);
-  const [recipeIndirectCosts, setRecipeIndirectCosts] = useState<RecipeIndirectCost[]>([]);
   const [recipes, setRecipes] = useState<Array<{ id: string; name: string }>>([]);
+  const { recipeIndirectCosts, addCost, deleteCost } = useRecipeIndirectCosts();
   
   // Form states
   const [newCost, setNewCost] = useState({
@@ -69,14 +58,12 @@ const IndirectCosts = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const [costsResult, recipeCostsResult, recipesResult] = await Promise.all([
+      const [costsResult, recipesResult] = await Promise.all([
         supabase.from("indirect_costs").select("*").eq("user_id", user.id).order("created_at", { ascending: false }),
-        supabase.from("recipe_indirect_costs").select("*, recipes(name)").eq("user_id", user.id).order("created_at", { ascending: false }),
         supabase.from("recipes").select("id, name").eq("user_id", user.id).order("name"),
       ]);
 
       if (costsResult.data) setIndirectCosts(costsResult.data as IndirectCost[]);
-      if (recipeCostsResult.data) setRecipeIndirectCosts(recipeCostsResult.data as RecipeIndirectCost[]);
       if (recipesResult.data) setRecipes(recipesResult.data);
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -146,11 +133,7 @@ const IndirectCosts = () => {
 
     setIsAddingRecipeCost(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { error } = await supabase.from("recipe_indirect_costs").insert({
-        user_id: user.id,
+      await addCost.mutateAsync({
         recipe_id: newRecipeCost.recipe_id,
         cost_name: newRecipeCost.cost_name,
         amount: parseFloat(newRecipeCost.amount),
@@ -158,15 +141,12 @@ const IndirectCosts = () => {
         notes: newRecipeCost.notes || null,
       });
 
-      if (error) throw error;
-
       toast({
         title: "Custo adicionado à receita",
         description: "O custo foi vinculado à receita com sucesso.",
       });
 
       setNewRecipeCost({ recipe_id: "", cost_name: "", amount: "", cost_type: "packaging", notes: "" });
-      fetchData();
     } catch (error) {
       console.error("Error adding recipe cost:", error);
       toast({
@@ -200,14 +180,12 @@ const IndirectCosts = () => {
 
   const handleDeleteRecipeCost = async (id: string) => {
     try {
-      const { error } = await supabase.from("recipe_indirect_costs").delete().eq("id", id);
-      if (error) throw error;
+      await deleteCost.mutateAsync(id);
 
       toast({
         title: "Custo removido",
         description: "O custo foi desvinculado da receita.",
       });
-      fetchData();
     } catch (error) {
       console.error("Error deleting recipe cost:", error);
       toast({

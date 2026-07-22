@@ -1,283 +1,76 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Layout } from "@/components/Layout";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2, ChefHat, Calculator, Coffee, IceCream, Salad, Pizza, Cake, Wine, UtensilsCrossed, Cookie, Soup, Fish, Beef, Tag, LucideIcon } from "lucide-react";
-import { z } from "zod";
-import { RecipeIngredientsDialog } from "@/components/RecipeIngredientsDialog";
+import { Plus, Pencil, Trash2, ChefHat, Calculator } from "lucide-react";
 import { PortionCalculator } from "@/components/PortionCalculator";
 import { SearchBar } from "@/components/SearchBar";
 import { EmptyState } from "@/components/EmptyState";
 import { TableSkeleton } from "@/components/SkeletonLoader";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { PrerequisiteNotice } from "@/components/PrerequisiteNotice";
-
-// Validação de segurança para prevenir injection attacks
-const recipeSchema = z.object({
-  name: z.string()
-    .trim()
-    .min(1, "Nome é obrigatório")
-    .max(200, "Nome deve ter no máximo 200 caracteres")
-    .regex(/^[a-zA-ZÀ-ÿ0-9\s\-.,()]+$/, "Nome contém caracteres inválidos"),
-  waste_percentage: z.number()
-    .min(0, "Porcentagem deve ser positiva")
-    .max(100, "Porcentagem não pode ser maior que 100"),
-  prep_time_minutes: z.number()
-    .min(0, "Tempo deve ser positivo")
-    .max(10000, "Tempo muito longo"),
-  notes: z.string()
-    .max(1000, "Observações devem ter no máximo 1000 caracteres")
-    .optional()
-    .or(z.literal("")),
-});
-
-const ICON_MAP: Record<string, LucideIcon> = {
-  ChefHat,
-  Coffee,
-  IceCream,
-  Salad,
-  Pizza,
-  Cake,
-  Wine,
-  UtensilsCrossed,
-  Cookie,
-  Soup,
-  Fish,
-  Beef,
-  Tag,
-};
-
-const CategoryIcon = ({ iconName, className }: { iconName: string | null; className?: string }) => {
-  const Icon = iconName && ICON_MAP[iconName] ? ICON_MAP[iconName] : Tag;
-  return <Icon className={className} />;
-};
-
-type Recipe = {
-  id: string;
-  name: string;
-  waste_percentage: number;
-  prep_time_minutes: number;
-  notes: string | null;
-  category_id: string | null;
-  default_servings: number;
-};
-
-type Ingredient = {
-  id: string;
-  name: string;
-  unit: string;
-  unit_cost: number;
-};
-
-type Category = {
-  id: string;
-  name: string;
-  icon: string | null;
-  color: string | null;
-};
+import { CategoryIcon } from "@/components/recipes/CategoryIcon";
+import { RecipeEditorDialog } from "@/components/recipes/RecipeEditorDialog";
+import { useRecipes } from "@/hooks/useRecipes";
+import { useIngredients } from "@/hooks/useIngredients";
+import type { Recipe } from "@/schemas/recipe";
 
 export default function Recipes() {
   const navigate = useNavigate();
-  const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [ingredients, setIngredients] = useState<Ingredient[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [ingredientsDialogOpen, setIngredientsDialogOpen] = useState(false);
-  const [portionCalculatorOpen, setPortionCalculatorOpen] = useState(false);
-  const [selectedRecipeId, setSelectedRecipeId] = useState<string | null>(null);
-  const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<string>("all");
-  const [formData, setFormData] = useState({
-    name: "",
-    waste_percentage: "0",
-    prep_time_minutes: "0",
-    notes: "",
-    category_id: "",
-    default_servings: "1",
+  const { recipes, isLoading: loadingRecipes, deleteRecipe } = useRecipes();
+  const { ingredients } = useIngredients();
+  const { data: categories = [] } = useQuery({
+    queryKey: ["categories"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("categories").select("*").order("name");
+      if (error) throw error;
+      return data;
+    },
   });
 
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [editingRecipe, setEditingRecipe] = useState<Recipe | null>(null);
+  const [portionCalculatorOpen, setPortionCalculatorOpen] = useState(false);
+  const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+
   useEffect(() => {
-    checkAuthAndFetch();
-  }, []);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) navigate("/auth");
+    });
+  }, [navigate]);
 
-  const checkAuthAndFetch = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      navigate("/auth");
-      return;
-    }
-    await Promise.all([fetchRecipes(), fetchIngredients(), fetchCategories()]);
-  };
-
-  const fetchRecipes = async () => {
-    const { data, error } = await supabase
-      .from("recipes")
-      .select("*")
-      .order("name");
-
-    if (error) {
-      toast({
-        title: "Erro ao carregar receitas",
-        description: error.message,
-        variant: "destructive",
-      });
-    } else {
-      setRecipes(data || []);
-    }
-    setLoading(false);
-  };
-
-  const fetchIngredients = async () => {
-    const { data, error } = await supabase
-      .from("ingredients")
-      .select("*")
-      .order("name");
-
-    if (error) {
-      toast({
-        title: "Erro ao carregar ingredientes",
-        description: error.message,
-        variant: "destructive",
-      });
-    } else {
-      setIngredients(data || []);
-    }
-  };
-
-  const fetchCategories = async () => {
-    const { data, error } = await supabase
-      .from("categories")
-      .select("*")
-      .order("name");
-
-    if (error) {
-      toast({
-        title: "Erro ao carregar categorias",
-        description: error.message,
-        variant: "destructive",
-      });
-    } else {
-      setCategories(data || []);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    try {
-      const validated = recipeSchema.parse({
-        name: formData.name,
-        waste_percentage: parseFloat(formData.waste_percentage),
-        prep_time_minutes: parseInt(formData.prep_time_minutes),
-        notes: formData.notes,
-      });
-
-      const recipeData = {
-        ...validated,
-        category_id: formData.category_id || null,
-        default_servings: parseInt(formData.default_servings),
-      };
-
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      if (editingId) {
-        const { error } = await supabase
-          .from("recipes")
-          .update(recipeData)
-          .eq("id", editingId);
-
-        if (error) throw error;
-        toast({ title: "Receita atualizada com sucesso!" });
-      } else {
-        const { data, error } = await supabase
-          .from("recipes")
-          .insert([{ 
-            name: validated.name,
-            waste_percentage: validated.waste_percentage,
-            prep_time_minutes: validated.prep_time_minutes,
-            notes: validated.notes,
-            category_id: formData.category_id || null,
-            default_servings: parseInt(formData.default_servings),
-            user_id: user.id 
-          }])
-          .select()
-          .single();
-
-        if (error) throw error;
-        if (data) {
-          setSelectedRecipeId(data.id);
-          setIngredientsDialogOpen(true);
-        }
-        toast({ title: "Receita criada! Agora adicione os ingredientes." });
-      }
-
-      setDialogOpen(false);
-      resetForm();
-      fetchRecipes();
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        toast({
-          title: "Erro de validação",
-          description: error.errors[0].message,
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Erro ao salvar",
-          description: String(error),
-          variant: "destructive",
-        });
-      }
-    }
+  const handleCreate = () => {
+    setEditingRecipe(null);
+    setEditorOpen(true);
   };
 
   const handleEdit = (recipe: Recipe) => {
-    setEditingId(recipe.id);
-    setFormData({
-      name: recipe.name,
-      waste_percentage: recipe.waste_percentage.toString(),
-      prep_time_minutes: recipe.prep_time_minutes.toString(),
-      notes: recipe.notes || "",
-      category_id: recipe.category_id || "",
-      default_servings: recipe.default_servings.toString(),
-    });
-    setDialogOpen(true);
+    setEditingRecipe(recipe);
+    setEditorOpen(true);
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Tem certeza que deseja excluir esta receita?")) return;
 
-    const { error } = await supabase.from("recipes").delete().eq("id", id);
-
-    if (error) {
+    try {
+      await deleteRecipe.mutateAsync(id);
+      toast({ title: "Receita excluída com sucesso!" });
+    } catch (error) {
       toast({
         title: "Erro ao excluir",
-        description: error.message,
+        description: error instanceof Error ? error.message : String(error),
         variant: "destructive",
       });
-    } else {
-      toast({ title: "Receita excluída com sucesso!" });
-      fetchRecipes();
     }
-  };
-
-  const handleManageIngredients = (recipeId: string) => {
-    setSelectedRecipeId(recipeId);
-    setIngredientsDialogOpen(true);
   };
 
   const handlePortionCalculator = (recipe: Recipe) => {
@@ -285,20 +78,14 @@ export default function Recipes() {
     setPortionCalculatorOpen(true);
   };
 
-  const resetForm = () => {
-    setFormData({ name: "", waste_percentage: "0", prep_time_minutes: "0", notes: "", category_id: "", default_servings: "1" });
-    setEditingId(null);
-  };
-
-  // Filter recipes based on search query and category
-  const filteredRecipes = recipes.filter(recipe => {
+  const filteredRecipes = recipes.filter((recipe) => {
     const matchesSearch = recipe.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       recipe.notes?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = selectedCategory === "all" || recipe.category_id === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
-  if (loading) {
+  if (loadingRecipes) {
     return (
       <Layout>
         <div className="space-y-6 animate-fade-in">
@@ -317,119 +104,16 @@ export default function Recipes() {
     <Layout>
       <div className="space-y-6 animate-fade-in">
         <Breadcrumbs items={[{ label: "Receitas / Pratos" }]} />
-        
+
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-3xl font-bold mb-2">Receitas / Pratos</h1>
-            <p className="text-muted-foreground">
-              Crie e gerencie suas receitas com ingredientes
-            </p>
+            <p className="text-muted-foreground">Monte suas receitas e veja o custo e o preço em tempo real</p>
           </div>
-          <Dialog open={dialogOpen} onOpenChange={(open) => {
-            setDialogOpen(open);
-            if (!open) resetForm();
-          }}>
-            <DialogTrigger asChild>
-              <Button className="gap-2">
-                <Plus className="h-4 w-4" />
-                Nova Receita
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>
-                  {editingId ? "Editar Receita" : "Nova Receita"}
-                </DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Nome do Prato/Bebida</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="Ex: Pizza Margherita"
-                    maxLength={200}
-                    autoComplete="off"
-                    required
-                  />
-                </div>
-                <div className="grid gap-4 sm:grid-cols-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="waste">% Desperdício</Label>
-                    <Input
-                      id="waste"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      max="100"
-                      value={formData.waste_percentage}
-                      onChange={(e) => setFormData({ ...formData, waste_percentage: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="prep">Tempo de Preparo (min)</Label>
-                    <Input
-                      id="prep"
-                      type="number"
-                      min="0"
-                      max="10000"
-                      value={formData.prep_time_minutes}
-                      onChange={(e) => setFormData({ ...formData, prep_time_minutes: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="servings">Porções Padrão</Label>
-                    <Input
-                      id="servings"
-                      type="number"
-                      min="1"
-                      value={formData.default_servings}
-                      onChange={(e) => setFormData({ ...formData, default_servings: e.target.value })}
-                      required
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="category">Categoria (opcional)</Label>
-                  <Select
-                    value={formData.category_id || undefined}
-                    onValueChange={(value) => setFormData({ ...formData, category_id: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Sem categoria" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((cat) => (
-                        <SelectItem key={cat.id} value={cat.id}>
-                          <div className="flex items-center gap-2">
-                            <CategoryIcon iconName={cat.icon} className="h-4 w-4" />
-                            <span>{cat.name}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="notes">Observações (opcional)</Label>
-                  <Textarea
-                    id="notes"
-                    value={formData.notes}
-                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                    placeholder="Instruções especiais ou observações..."
-                    maxLength={1000}
-                    rows={3}
-                  />
-                </div>
-                <Button type="submit" className="w-full">
-                  {editingId ? "Atualizar" : "Criar e Adicionar Ingredientes"}
-                </Button>
-              </form>
-            </DialogContent>
-          </Dialog>
+          <Button className="gap-2" onClick={handleCreate}>
+            <Plus className="h-4 w-4" />
+            Nova Receita
+          </Button>
         </div>
 
         {ingredients.length === 0 && (
@@ -440,6 +124,14 @@ export default function Recipes() {
             actionRoute="/ingredients"
           />
         )}
+
+        <RecipeEditorDialog
+          open={editorOpen}
+          onOpenChange={setEditorOpen}
+          editingRecipe={editingRecipe}
+          ingredients={ingredients}
+          categories={categories}
+        />
 
         <Card>
           <CardHeader>
@@ -478,7 +170,7 @@ export default function Recipes() {
                 title="Nenhuma receita criada"
                 description="Crie sua primeira receita combinando ingredientes e definindo quantidades."
                 actionLabel="Criar Primeira Receita"
-                onAction={() => setDialogOpen(true)}
+                onAction={handleCreate}
               />
             ) : filteredRecipes.length === 0 ? (
               <EmptyState
@@ -502,19 +194,16 @@ export default function Recipes() {
                 </TableHeader>
                 <TableBody>
                   {filteredRecipes.map((recipe) => {
-                    const category = categories.find(c => c.id === recipe.category_id);
+                    const category = categories.find((c) => c.id === recipe.category_id);
                     return (
                       <TableRow key={recipe.id}>
                         <TableCell className="font-medium">{recipe.name}</TableCell>
                         <TableCell>
                           {category ? (
-                            <Badge 
+                            <Badge
                               variant="secondary"
                               className="gap-1.5"
-                              style={{ 
-                                backgroundColor: category.color || "#3b82f6",
-                                color: "white"
-                              }}
+                              style={{ backgroundColor: category.color || "#3b82f6", color: "white" }}
                             >
                               <CategoryIcon iconName={category.icon} className="h-4 w-4" />
                               {category.name}
@@ -524,67 +213,34 @@ export default function Recipes() {
                           )}
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline">
-                            {recipe.default_servings}
-                          </Badge>
+                          <Badge variant="outline">{recipe.default_servings}</Badge>
                         </TableCell>
                         <TableCell>
-                          <Badge variant="secondary">
-                            {recipe.waste_percentage}%
-                          </Badge>
+                          <Badge variant="secondary">{recipe.waste_percentage}%</Badge>
                         </TableCell>
                         <TableCell>{recipe.prep_time_minutes} min</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex gap-2 justify-end">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handlePortionCalculator(recipe)}
-                          >
-                            <Calculator className="h-4 w-4 mr-1" />
-                            Porções
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleManageIngredients(recipe.id)}
-                          >
-                            Ingredientes
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => handleEdit(recipe)}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="icon"
-                            onClick={() => handleDelete(recipe.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
+                        <TableCell className="text-right">
+                          <div className="flex gap-2 justify-end">
+                            <Button variant="outline" size="sm" onClick={() => handlePortionCalculator(recipe)}>
+                              <Calculator className="h-4 w-4 mr-1" />
+                              Porções
+                            </Button>
+                            <Button variant="outline" size="icon" onClick={() => handleEdit(recipe)}>
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button variant="destructive" size="icon" onClick={() => handleDelete(recipe.id)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
                   })}
                 </TableBody>
               </Table>
             )}
           </CardContent>
         </Card>
-
-        {selectedRecipeId && (
-          <RecipeIngredientsDialog
-            recipeId={selectedRecipeId}
-            ingredients={ingredients}
-            open={ingredientsDialogOpen}
-            onOpenChange={setIngredientsDialogOpen}
-            onUpdate={fetchRecipes}
-          />
-        )}
 
         {selectedRecipe && (
           <PortionCalculator
