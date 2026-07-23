@@ -374,40 +374,31 @@ export type Database = {
           created_at: string | null
           id: string
           name: string
-          package_price: number | null
-          package_quantity: number | null
           supplier: string | null
           unit: string
           unit_cost: number
           updated_at: string | null
           user_id: string
-          waste_percentage: number
         }
         Insert: {
           created_at?: string | null
           id?: string
           name: string
-          package_price?: number | null
-          package_quantity?: number | null
           supplier?: string | null
           unit: string
           unit_cost: number
           updated_at?: string | null
           user_id: string
-          waste_percentage?: number
         }
         Update: {
           created_at?: string | null
           id?: string
           name?: string
-          package_price?: number | null
-          package_quantity?: number | null
           supplier?: string | null
           unit?: string
           unit_cost?: number
           updated_at?: string | null
           user_id?: string
-          waste_percentage?: number
         }
         Relationships: []
       }
