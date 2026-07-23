@@ -475,13 +475,7 @@ export default function Dashboard() {
         </div>
 
         {/* Setup Progress */}
-        <SetupProgress
-          hasIngredients={stats.totalIngredients > 0}
-          hasRecipes={stats.totalRecipes > 0}
-          hasIndirectCosts={stats.totalIndirectCosts > 0}
-          hasPricings={stats.totalPricings > 0}
-          hasSales={stats.totalSales > 0}
-        />
+        <SetupProgress />
 
         {/* Quick Actions */}
         <QuickActions

@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2, ChefHat, Calculator } from "lucide-react";
+import { Plus, Pencil, Trash2, ChefHat, Calculator, Tag } from "lucide-react";
 import { PortionCalculator } from "@/components/PortionCalculator";
 import { SearchBar } from "@/components/SearchBar";
 import { EmptyState } from "@/components/EmptyState";
@@ -160,6 +160,10 @@ export default function Recipes() {
                   placeholder="Buscar receita..."
                   className="w-full sm:w-72"
                 />
+                <Button variant="outline" size="sm" className="gap-2" onClick={() => navigate("/categories")}>
+                  <Tag className="h-4 w-4" />
+                  Gerenciar Categorias
+                </Button>
               </div>
             </div>
           </CardHeader>

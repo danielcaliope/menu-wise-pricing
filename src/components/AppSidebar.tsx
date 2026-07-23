@@ -1,4 +1,4 @@
-import { LayoutDashboard, Package, FileText, Tag, DollarSign, Settings, LogOut, PackageCheck, Bell, BarChart3, FileSpreadsheet, MenuSquare, Building2, ShoppingCart, ShoppingBag, Plug } from "lucide-react";
+import { LayoutDashboard, Package, FileText, DollarSign, Settings, LogOut, PackageCheck, Bell, BarChart3, FileSpreadsheet, MenuSquare, Building2, ShoppingCart, ShoppingBag, Plug } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -15,32 +15,35 @@ import {
   SidebarFooter,
 } from "@/components/ui/sidebar";
 
-const dashboardItem = { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard };
-
 const menuGroups = [
   {
-    label: "Comece aqui",
+    label: "Visão geral",
     items: [
-      { title: "1. Ingredientes", url: "/ingredients", icon: Package },
-      { title: "2. Categorias", url: "/categories", icon: Tag },
-      { title: "3. Receitas / Pratos", url: "/recipes", icon: FileText },
-      { title: "4. Custos Indiretos", url: "/indirect-costs", icon: Building2 },
-      { title: "5. Precificação", url: "/pricing", icon: DollarSign },
+      { title: "Início", url: "/dashboard", icon: LayoutDashboard },
+      { title: "Alertas", url: "/cost-alerts", icon: Bell },
     ],
   },
   {
-    label: "Operação",
+    label: "Produtos",
     items: [
-      { title: "Vendas", url: "/sales", icon: ShoppingCart },
-      { title: "Controle de Estoque", url: "/stock", icon: PackageCheck },
+      { title: "Pratos", url: "/recipes", icon: FileText },
+      { title: "Ingredientes", url: "/ingredients", icon: Package },
+      { title: "Estoque", url: "/stock", icon: PackageCheck },
       { title: "Cardápio Digital", url: "/menu", icon: MenuSquare },
     ],
   },
   {
-    label: "Análises",
+    label: "Financeiro",
     items: [
-      { title: "Alertas de Custos", url: "/cost-alerts", icon: Bell },
-      { title: "Análise Competitiva", url: "/competitive-analysis", icon: BarChart3 },
+      { title: "Custos da Operação", url: "/indirect-costs", icon: Building2 },
+      { title: "Canais e Taxas", url: "/pricing", icon: DollarSign },
+      { title: "Rentabilidade", url: "/sales", icon: ShoppingCart },
+    ],
+  },
+  {
+    label: "Inteligência",
+    items: [
+      { title: "Análises", url: "/competitive-analysis", icon: BarChart3 },
       { title: "Relatórios", url: "/reports", icon: FileSpreadsheet },
     ],
   },
@@ -49,6 +52,12 @@ const menuGroups = [
     items: [
       { title: "Configuração iFood", url: "/ifood-settings", icon: Plug },
       { title: "Pedidos iFood", url: "/ifood-orders", icon: ShoppingBag },
+    ],
+  },
+  {
+    label: "Administração",
+    items: [
+      { title: "Configurações", url: "/settings", icon: Settings },
     ],
   },
 ];
@@ -86,21 +95,6 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <NavLink to={dashboardItem.url} className={navClass}>
-                    <dashboardItem.icon className="h-4 w-4" />
-                    <span>{dashboardItem.title}</span>
-                  </NavLink>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
         {menuGroups.map((group) => (
           <SidebarGroup key={group.label}>
             <SidebarGroupLabel>{group.label}</SidebarGroupLabel>

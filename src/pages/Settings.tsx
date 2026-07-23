@@ -12,7 +12,7 @@ import { z } from "zod";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { StatsSkeleton } from "@/components/SkeletonLoader";
 import { Onboarding } from "@/components/Onboarding";
-import { GraduationCap } from "lucide-react";
+import { GraduationCap, Tag } from "lucide-react";
 
 // Validação de segurança para prevenir SQL injection e code injection
 const profileSchema = z.object({
@@ -198,6 +198,20 @@ export default function Settings() {
           </CardContent>
         </Card>
 
+        <Card>
+          <CardHeader>
+            <CardTitle>Categorias</CardTitle>
+            <CardDescription>
+              Organize seus pratos em categorias para facilitar a navegação no cardápio
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button variant="outline" onClick={() => navigate("/categories")} className="gap-2">
+              <Tag className="h-4 w-4" />
+              Gerenciar Categorias
+            </Button>
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader>

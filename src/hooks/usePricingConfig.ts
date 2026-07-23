@@ -20,12 +20,17 @@ export const DEFAULT_PRICING_CONFIG: PricingConfig = {
   delivery_fee_percentage: 0,
 };
 
+type PricingConfigQueryResult = {
+  config: PricingConfig;
+  hasSavedConfig: boolean;
+};
+
 export function usePricingConfig() {
   const queryClient = useQueryClient();
 
   const query = useQuery({
     queryKey: ["pricing-config"],
-    queryFn: async (): Promise<PricingConfig> => {
+    queryFn: async (): Promise<PricingConfigQueryResult> => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Não autenticado");
 
@@ -39,18 +44,21 @@ export function usePricingConfig() {
 
       if (data) {
         return {
-          profit_margin_percentage: Number(data.profit_margin_percentage),
-          tax_percentage: Number(data.tax_percentage),
-          regional_factor: Number(data.regional_factor),
-          income_level: data.income_level || "medium",
-          delivery_fee_percentage: Number(data.delivery_fee_percentage || 0),
+          hasSavedConfig: true,
+          config: {
+            profit_margin_percentage: Number(data.profit_margin_percentage),
+            tax_percentage: Number(data.tax_percentage),
+            regional_factor: Number(data.regional_factor),
+            income_level: data.income_level || "medium",
+            delivery_fee_percentage: Number(data.delivery_fee_percentage || 0),
+          },
         };
       }
 
-      // Get-or-create: ainda não existe linha pra este usuário — cria com os
-      // defaults das colunas (mesmos valores de DEFAULT_PRICING_CONFIG).
-      await supabase.from("pricing_configs").insert([{ user_id: user.id }]);
-      return DEFAULT_PRICING_CONFIG;
+      // Sem linha ainda: devolve os defaults só em memória, sem gravar nada —
+      // "existe uma linha salva" precisa continuar significando "o usuário
+      // configurou de propósito" (usado pelo checklist de onboarding).
+      return { hasSavedConfig: false, config: DEFAULT_PRICING_CONFIG };
     },
   });
 
@@ -70,7 +78,8 @@ export function usePricingConfig() {
   });
 
   return {
-    config: query.data ?? DEFAULT_PRICING_CONFIG,
+    config: query.data?.config ?? DEFAULT_PRICING_CONFIG,
+    hasSavedConfig: query.data?.hasSavedConfig ?? false,
     isLoading: query.isLoading,
     saveConfig,
   };
