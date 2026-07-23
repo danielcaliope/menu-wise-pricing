@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useIngredients } from "./useIngredients";
-import { useRecipes } from "./useRecipes";
+import { useIngredients } from "@/features/ingredients/api";
+import { useRecipes } from "@/features/recipes/api";
 import { usePricingConfig } from "./usePricingConfig";
 
 export type OnboardingStep = {

@@ -1,5 +1,5 @@
 import { useOnboardingProgress } from "./useOnboardingProgress";
-import { useRecipes } from "./useRecipes";
+import { useRecipes } from "@/features/recipes/api";
 
 export type DashboardState = "loading" | "onboarding" | "starting" | "active";
 

@@ -12,32 +12,28 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Trash2, Building2, Package, DollarSign, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { useRecipeIndirectCosts } from "@/hooks/useRecipeIndirectCosts";
-
-type IndirectCost = {
-  id: string;
-  name: string;
-  cost_type: "fixed_monthly" | "variable";
-  amount: number;
-  description: string | null;
-  created_at: string;
-};
+import { useRecipeIndirectCosts, useAddRecipeIndirectCost, useDeleteRecipeIndirectCost } from "@/features/recipes/api";
+import { useOperatingCosts, useCreateOperatingCost, useDeleteOperatingCost, type OperatingCostType } from "@/features/costs/api";
 
 const IndirectCosts = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
-  const [indirectCosts, setIndirectCosts] = useState<IndirectCost[]>([]);
   const [recipes, setRecipes] = useState<Array<{ id: string; name: string }>>([]);
-  const { recipeIndirectCosts, addCost, deleteCost } = useRecipeIndirectCosts();
-  
+  const { operatingCosts: indirectCosts, isLoading: loadingOperatingCosts } = useOperatingCosts();
+  const createOperatingCost = useCreateOperatingCost();
+  const deleteOperatingCost = useDeleteOperatingCost();
+  const { recipeIndirectCosts } = useRecipeIndirectCosts();
+  const addCost = useAddRecipeIndirectCost();
+  const deleteCost = useDeleteRecipeIndirectCost();
+
   // Form states
   const [newCost, setNewCost] = useState({
     name: "",
-    cost_type: "fixed_monthly" as "fixed_monthly" | "variable",
+    cost_type: "fixed_monthly" as OperatingCostType,
     amount: "",
     description: "",
   });
-  
+
   const [newRecipeCost, setNewRecipeCost] = useState({
     recipe_id: "",
     cost_name: "",
@@ -50,26 +46,26 @@ const IndirectCosts = () => {
   const [isAddingRecipeCost, setIsAddingRecipeCost] = useState(false);
 
   useEffect(() => {
-    fetchData();
+    fetchRecipes();
   }, []);
 
-  const fetchData = async () => {
+  const fetchRecipes = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const [costsResult, recipesResult] = await Promise.all([
-        supabase.from("indirect_costs").select("*").eq("user_id", user.id).order("created_at", { ascending: false }),
-        supabase.from("recipes").select("id, name").eq("user_id", user.id).order("name"),
-      ]);
+      const { data } = await supabase
+        .from("recipes")
+        .select("id, name")
+        .eq("user_id", user.id)
+        .order("name");
 
-      if (costsResult.data) setIndirectCosts(costsResult.data as IndirectCost[]);
-      if (recipesResult.data) setRecipes(recipesResult.data);
+      if (data) setRecipes(data);
     } catch (error) {
-      console.error("Error fetching data:", error);
+      console.error("Error fetching recipes:", error);
       toast({
         title: "Erro ao carregar dados",
-        description: "Não foi possível carregar os custos indiretos.",
+        description: "Não foi possível carregar as receitas.",
         variant: "destructive",
       });
     } finally {
@@ -89,18 +85,12 @@ const IndirectCosts = () => {
 
     setIsAddingCost(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { error } = await supabase.from("indirect_costs").insert({
-        user_id: user.id,
+      await createOperatingCost.mutateAsync({
         name: newCost.name,
         cost_type: newCost.cost_type,
         amount: parseFloat(newCost.amount),
         description: newCost.description || null,
       });
-
-      if (error) throw error;
 
       toast({
         title: "Custo adicionado",
@@ -108,7 +98,6 @@ const IndirectCosts = () => {
       });
 
       setNewCost({ name: "", cost_type: "fixed_monthly", amount: "", description: "" });
-      fetchData();
     } catch (error) {
       console.error("Error adding cost:", error);
       toast({
@@ -161,14 +150,12 @@ const IndirectCosts = () => {
 
   const handleDeleteIndirectCost = async (id: string) => {
     try {
-      const { error } = await supabase.from("indirect_costs").delete().eq("id", id);
-      if (error) throw error;
+      await deleteOperatingCost.mutateAsync(id);
 
       toast({
         title: "Custo removido",
         description: "O custo indireto foi excluído.",
       });
-      fetchData();
     } catch (error) {
       console.error("Error deleting cost:", error);
       toast({
@@ -207,7 +194,7 @@ const IndirectCosts = () => {
       .reduce((sum, cost) => sum + Number(cost.amount), 0);
   };
 
-  if (loading) {
+  if (loading || loadingOperatingCosts) {
     return (
       <div className="flex items-center justify-center h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />

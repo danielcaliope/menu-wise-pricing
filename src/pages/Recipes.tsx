@@ -18,13 +18,14 @@ import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { PrerequisiteNotice } from "@/components/PrerequisiteNotice";
 import { CategoryIcon } from "@/components/recipes/CategoryIcon";
 import { RecipeEditorDialog } from "@/components/recipes/RecipeEditorDialog";
-import { useRecipes } from "@/hooks/useRecipes";
-import { useIngredients } from "@/hooks/useIngredients";
+import { useRecipes, useDeleteRecipe } from "@/features/recipes/api";
+import { useIngredients } from "@/features/ingredients/api";
 import type { Recipe } from "@/schemas/recipe";
 
 export default function Recipes() {
   const navigate = useNavigate();
-  const { recipes, isLoading: loadingRecipes, deleteRecipe } = useRecipes();
+  const { recipes, isLoading: loadingRecipes } = useRecipes();
+  const deleteRecipe = useDeleteRecipe();
   const { ingredients } = useIngredients();
   const { data: categories = [] } = useQuery({
     queryKey: ["categories"],

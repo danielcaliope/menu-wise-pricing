@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "@/hooks/use-toast";
 import { Plus, Trash2 } from "lucide-react";
-import { useRecipeIndirectCosts, type RecipeIndirectCostType } from "@/hooks/useRecipeIndirectCosts";
+import { useRecipeIndirectCosts, useAddRecipeIndirectCost, useDeleteRecipeIndirectCost, type RecipeIndirectCostType } from "@/features/recipes/api";
 
 const COST_TYPE_LABEL: Record<RecipeIndirectCostType, string> = {
   packaging: "Embalagem",
@@ -19,7 +19,9 @@ type RecipeIndirectCostsEditorProps = {
 };
 
 export function RecipeIndirectCostsEditor({ recipeId }: RecipeIndirectCostsEditorProps) {
-  const { recipeIndirectCosts, addCost, deleteCost } = useRecipeIndirectCosts(recipeId);
+  const { recipeIndirectCosts } = useRecipeIndirectCosts(recipeId);
+  const addCost = useAddRecipeIndirectCost();
+  const deleteCost = useDeleteRecipeIndirectCost();
   const [costName, setCostName] = useState("");
   const [amount, setAmount] = useState("");
   const [costType, setCostType] = useState<RecipeIndirectCostType>("packaging");

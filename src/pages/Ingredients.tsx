@@ -8,7 +8,7 @@ import { toast } from "@/hooks/use-toast";
 import { Plus, Upload } from "lucide-react";
 import { TableSkeleton } from "@/components/SkeletonLoader";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
-import { useIngredients } from "@/hooks/useIngredients";
+import { useIngredients, useDeleteIngredient, useImportIngredients } from "@/features/ingredients/api";
 import { IngredientFormDialog } from "@/components/ingredients/IngredientFormDialog";
 import { IngredientImportDialog } from "@/components/ingredients/IngredientImportDialog";
 import { IngredientsFilters } from "@/components/ingredients/IngredientsFilters";
@@ -17,7 +17,9 @@ import type { Ingredient } from "@/schemas/ingredient";
 
 export default function Ingredients() {
   const navigate = useNavigate();
-  const { ingredients, isLoading, deleteIngredient, importIngredients } = useIngredients();
+  const { ingredients, isLoading } = useIngredients();
+  const deleteIngredient = useDeleteIngredient();
+  const importIngredients = useImportIngredients();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingIngredient, setEditingIngredient] = useState<Ingredient | null>(null);
   const [importDialogOpen, setImportDialogOpen] = useState(false);

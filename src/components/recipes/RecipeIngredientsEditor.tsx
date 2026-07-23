@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "@/hooks/use-toast";
 import { Plus, Trash2 } from "lucide-react";
-import { useRecipeIngredients } from "@/hooks/useRecipeIngredients";
+import { useRecipeIngredients, useAddRecipeIngredient, useRemoveRecipeIngredient } from "@/features/recipes/api";
 import { calculateIngredientLineCost } from "@/domain/pricing";
 
 type Ingredient = { id: string; name: string; unit: string; unit_cost: number };
@@ -17,7 +17,9 @@ type RecipeIngredientsEditorProps = {
 };
 
 export function RecipeIngredientsEditor({ recipeId, ingredients }: RecipeIngredientsEditorProps) {
-  const { recipeIngredients, addIngredient, removeIngredient } = useRecipeIngredients(recipeId);
+  const { recipeIngredients } = useRecipeIngredients(recipeId);
+  const addIngredient = useAddRecipeIngredient();
+  const removeIngredient = useRemoveRecipeIngredient();
   const [selectedIngredientId, setSelectedIngredientId] = useState("");
   const [quantity, setQuantity] = useState("");
 

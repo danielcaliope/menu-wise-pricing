@@ -2,8 +2,7 @@ import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { calculateRecipeCost } from "@/domain/pricing";
-import { useRecipes } from "./useRecipes";
-import { useRecipeIndirectCosts } from "./useRecipeIndirectCosts";
+import { useRecipes, useRecipeIndirectCosts } from "@/features/recipes/api";
 
 export type RecipeOverview = {
   recipeId: string;

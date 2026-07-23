@@ -5,8 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, DollarSign, Package } from "lucide-react";
 import { QuickActions } from "@/components/QuickActions";
-import { useIngredients } from "@/hooks/useIngredients";
-import { useRecipes } from "@/hooks/useRecipes";
+import { useIngredients } from "@/features/ingredients/api";
+import { useRecipes } from "@/features/recipes/api";
 import { useRecipesOverview } from "@/hooks/useRecipesOverview";
 
 type LatestPrice = { recipe_name: string; recipe_cost: number; suggested_price: number } | null;

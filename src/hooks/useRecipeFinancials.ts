@@ -6,8 +6,7 @@ import {
   calculateContributionMargin,
   calculateDeliveryInclusivePrice,
 } from "@/domain/pricing";
-import { useRecipeIngredients } from "./useRecipeIngredients";
-import { useRecipeIndirectCosts } from "./useRecipeIndirectCosts";
+import { useRecipeIngredients, useRecipeIndirectCosts } from "@/features/recipes/api";
 import { usePricingConfig } from "./usePricingConfig";
 import { useProfile } from "./useProfile";
 

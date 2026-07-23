@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "@/hooks/use-toast";
 import { recipeSchema, type Recipe } from "@/schemas/recipe";
-import { useRecipes } from "@/hooks/useRecipes";
+import { useCreateRecipe, useUpdateRecipe } from "@/features/recipes/api";
 import { useRecipeFinancials } from "@/hooks/useRecipeFinancials";
 import { RecipeDetailsForm, type RecipeDetailsFormState } from "@/components/recipes/RecipeDetailsForm";
 import { RecipeIngredientsEditor } from "@/components/recipes/RecipeIngredientsEditor";
@@ -33,7 +33,8 @@ type RecipeEditorDialogProps = {
 };
 
 export function RecipeEditorDialog({ open, onOpenChange, editingRecipe, ingredients, categories }: RecipeEditorDialogProps) {
-  const { createRecipe, updateRecipe } = useRecipes();
+  const createRecipe = useCreateRecipe();
+  const updateRecipe = useUpdateRecipe();
   const [formData, setFormData] = useState<RecipeDetailsFormState>(EMPTY_FORM);
   const [recipeId, setRecipeId] = useState<string | null>(null);
 

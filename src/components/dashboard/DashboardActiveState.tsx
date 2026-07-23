@@ -1,5 +1,5 @@
-import { useIngredients } from "@/hooks/useIngredients";
-import { useRecipes } from "@/hooks/useRecipes";
+import { useIngredients } from "@/features/ingredients/api";
+import { useRecipes } from "@/features/recipes/api";
 import { QuickActions } from "@/components/QuickActions";
 import { DashboardAttentionPanel } from "./DashboardAttentionPanel";
 

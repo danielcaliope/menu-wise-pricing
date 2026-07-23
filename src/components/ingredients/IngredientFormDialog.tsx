@@ -8,8 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "@/hooks/use-toast";
 import { ingredientSchema, type Ingredient } from "@/schemas/ingredient";
-import { useIngredients } from "@/hooks/useIngredients";
-import { useIngredientMinStock, useSetIngredientMinStock } from "@/hooks/useIngredientStock";
+import { useCreateIngredient, useUpdateIngredient, useIngredientMinStock, useSetIngredientMinStock } from "@/features/ingredients/api";
 import { calculateIngredientUnitCost } from "@/domain/ingredients";
 import { previewBaseUnitCost, type MeasurementUnit } from "@/domain/units";
 
@@ -51,7 +50,8 @@ const EMPTY_FORM: FormState = {
 };
 
 export function IngredientFormDialog({ open, onOpenChange, editingIngredient }: IngredientFormDialogProps) {
-  const { createIngredient, updateIngredient } = useIngredients();
+  const createIngredient = useCreateIngredient();
+  const updateIngredient = useUpdateIngredient();
   const { data: existingMinStock } = useIngredientMinStock(editingIngredient?.id ?? null);
   const setMinStock = useSetIngredientMinStock();
 
