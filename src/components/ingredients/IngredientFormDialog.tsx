@@ -11,6 +11,7 @@ import { ingredientSchema, type Ingredient } from "@/schemas/ingredient";
 import { useCreateIngredient, useUpdateIngredient, useIngredientMinStock, useSetIngredientMinStock } from "@/features/ingredients/api";
 import { calculateIngredientUnitCost } from "@/domain/ingredients";
 import { previewBaseUnitCost, type MeasurementUnit } from "@/domain/units";
+import { formatUnitCost } from "@/lib/currency";
 
 type IngredientFormDialogProps = {
   open: boolean;
@@ -195,7 +196,9 @@ export function IngredientFormDialog({ open, onOpenChange, editingIngredient }: 
               Qual é o ingrediente?
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <span className="ml-1 text-muted-foreground cursor-help">ℹ️</span>
+                  <button type="button" className="ml-1 text-muted-foreground cursor-help" aria-label="Mais informações">
+                    ℹ️
+                  </button>
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>Nome do ingrediente (ex: Farinha de Trigo)</p>
@@ -220,7 +223,7 @@ export function IngredientFormDialog({ open, onOpenChange, editingIngredient }: 
 
           {smartMode ? (
             <>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="package_quantity">Quanto veio na embalagem?</Label>
                   <Input
@@ -293,12 +296,12 @@ export function IngredientFormDialog({ open, onOpenChange, editingIngredient }: 
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Custo por {form.unit}:</span>
-                    <span className="font-medium">R$ {smartPreview.unitCost.toFixed(4)}</span>
+                    <span className="font-medium">R$ {formatUnitCost(smartPreview.unitCost)}</span>
                   </div>
                   {baseUnitPreview && baseUnitPreview.baseUnit !== form.unit && (
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Custo por {baseUnitPreview.baseUnit}:</span>
-                      <span className="font-medium">R$ {baseUnitPreview.baseUnitCost.toFixed(4)}</span>
+                      <span className="font-medium">R$ {formatUnitCost(baseUnitPreview.baseUnitCost)}</span>
                     </div>
                   )}
                 </div>

@@ -4,13 +4,7 @@ import { Pencil, Trash2 } from "lucide-react";
 import { EmptyState } from "@/components/EmptyState";
 import { Package } from "lucide-react";
 import type { Ingredient } from "@/schemas/ingredient";
-
-// unit_cost pode ser um valor sub-centavo (ex.: custo por grama) — toFixed(2)
-// mostraria "R$ 0.00" ou "R$ 0.01" indistintamente, escondendo justamente o
-// número que esta tela existe para mostrar corretamente.
-function formatUnitCost(value: number): string {
-  return value > 0 && value < 0.01 ? value.toFixed(4) : value.toFixed(2);
-}
+import { formatUnitCost } from "@/lib/currency";
 
 type IngredientsTableProps = {
   ingredients: Ingredient[];
@@ -75,10 +69,10 @@ export function IngredientsTable({
             <TableCell>{ingredient.supplier || "-"}</TableCell>
             <TableCell className="text-right">
               <div className="flex gap-2 justify-end">
-                <Button variant="outline" size="icon" onClick={() => onEdit(ingredient)}>
+                <Button variant="outline" size="icon" aria-label={`Editar ${ingredient.name}`} onClick={() => onEdit(ingredient)}>
                   <Pencil className="h-4 w-4" />
                 </Button>
-                <Button variant="destructive" size="icon" onClick={() => onDelete(ingredient.id)}>
+                <Button variant="destructive" size="icon" aria-label={`Excluir ${ingredient.name}`} onClick={() => onDelete(ingredient.id)}>
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>

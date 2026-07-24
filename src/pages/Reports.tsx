@@ -13,6 +13,7 @@ import { ptBR } from "date-fns/locale";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
+import { formatUnitCost } from "@/lib/currency";
 
 type ReportType = 'costs' | 'profitability' | 'stock' | 'movements';
 
@@ -298,7 +299,7 @@ export default function Reports() {
         tableData = reportData.details.map((item: any) => [
           item.name,
           item.unit,
-          `R$ ${Number(item.unit_cost).toFixed(2)}`,
+          `R$ ${formatUnitCost(Number(item.unit_cost))}`,
           item.supplier || '-'
         ]);
         break;
@@ -525,7 +526,7 @@ export default function Reports() {
                             <>
                               <td className="p-3">{item.name}</td>
                               <td className="p-3">{item.unit}</td>
-                              <td className="p-3 text-right">R$ {Number(item.unit_cost).toFixed(2)}</td>
+                              <td className="p-3 text-right">R$ {formatUnitCost(Number(item.unit_cost))}</td>
                               <td className="p-3">{item.supplier || '-'}</td>
                             </>
                           )}

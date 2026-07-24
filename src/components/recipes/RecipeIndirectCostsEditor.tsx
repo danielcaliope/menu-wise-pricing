@@ -27,17 +27,18 @@ export function RecipeIndirectCostsEditor({ recipeId }: RecipeIndirectCostsEdito
   const [costType, setCostType] = useState<RecipeIndirectCostType>("packaging");
 
   const handleAdd = async () => {
-    if (!costName || !amount) {
+    const parsedAmount = parseFloat(amount);
+    if (!costName || !amount || Number.isNaN(parsedAmount) || parsedAmount <= 0) {
       toast({
         title: "Campos obrigatórios",
-        description: "Preencha nome e valor do custo",
+        description: "Preencha nome e um valor maior que zero",
         variant: "destructive",
       });
       return;
     }
 
     try {
-      await addCost.mutateAsync({ recipe_id: recipeId, cost_name: costName, amount: parseFloat(amount), cost_type: costType });
+      await addCost.mutateAsync({ recipe_id: recipeId, cost_name: costName, amount: parsedAmount, cost_type: costType });
       toast({ title: "Custo adicionado à receita!" });
       setCostName("");
       setAmount("");
@@ -68,13 +69,13 @@ export function RecipeIndirectCostsEditor({ recipeId }: RecipeIndirectCostsEdito
       <h3 className="font-semibold">Embalagem e outros custos desta receita</h3>
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="space-y-2">
-          <Label>Nome do custo</Label>
-          <Input value={costName} onChange={(e) => setCostName(e.target.value)} placeholder="Ex: Embalagem plástica" />
+          <Label htmlFor="recipe-cost-name">Nome do custo</Label>
+          <Input id="recipe-cost-name" value={costName} onChange={(e) => setCostName(e.target.value)} placeholder="Ex: Embalagem plástica" />
         </div>
         <div className="space-y-2">
-          <Label>Tipo</Label>
+          <Label htmlFor="recipe-cost-type">Tipo</Label>
           <Select value={costType} onValueChange={(value) => setCostType(value as RecipeIndirectCostType)}>
-            <SelectTrigger>
+            <SelectTrigger id="recipe-cost-type">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -85,8 +86,8 @@ export function RecipeIndirectCostsEditor({ recipeId }: RecipeIndirectCostsEdito
           </Select>
         </div>
         <div className="space-y-2">
-          <Label>Valor (R$)</Label>
-          <Input type="number" step="0.01" min="0" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" />
+          <Label htmlFor="recipe-cost-amount">Valor (R$)</Label>
+          <Input id="recipe-cost-amount" type="number" step="0.01" min="0" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" />
         </div>
       </div>
       <Button type="button" onClick={handleAdd} className="gap-2">
@@ -113,7 +114,13 @@ export function RecipeIndirectCostsEditor({ recipeId }: RecipeIndirectCostsEdito
                 <TableCell>{COST_TYPE_LABEL[cost.cost_type]}</TableCell>
                 <TableCell>R$ {Number(cost.amount).toFixed(2)}</TableCell>
                 <TableCell className="text-right">
-                  <Button type="button" variant="ghost" size="icon" onClick={() => handleDelete(cost.id)}>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    aria-label={`Remover ${cost.cost_name}`}
+                    onClick={() => handleDelete(cost.id)}
+                  >
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
                 </TableCell>

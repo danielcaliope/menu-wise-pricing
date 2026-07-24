@@ -26,12 +26,13 @@ async function getUserId(): Promise<string | null> {
 async function fetchTopRecipes() {
   const userId = await getUserId();
   if (!userId) return [];
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("pricing_history")
     .select("recipe_name, suggested_price, recipe_cost, profit_margin_percentage")
     .eq("user_id", userId)
     .order("suggested_price", { ascending: false })
     .limit(5);
+  if (error) throw error;
   return (data ?? []).map((item) => ({
     name: item.recipe_name,
     price: Number(item.suggested_price),
@@ -42,24 +43,26 @@ async function fetchTopRecipes() {
 async function fetchCostTrends() {
   const userId = await getUserId();
   if (!userId) return [];
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("ingredients")
     .select("name, unit_cost")
     .eq("user_id", userId)
     .order("unit_cost", { ascending: false })
     .limit(6);
+  if (error) throw error;
   return (data ?? []).map((ing) => ({ name: ing.name.substring(0, 10), cost: Number(ing.unit_cost) }));
 }
 
 async function fetchPricingTrends() {
   const userId = await getUserId();
   if (!userId) return [];
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("pricing_history")
     .select("created_at, suggested_price, recipe_cost")
     .eq("user_id", userId)
     .order("created_at", { ascending: true })
     .limit(30);
+  if (error) throw error;
   return (data ?? []).map((item) => ({
     date: format(new Date(item.created_at), "dd/MM", { locale: ptBR }),
     preco: Number(item.suggested_price),
@@ -70,10 +73,11 @@ async function fetchPricingTrends() {
 async function fetchCategoryDistribution() {
   const userId = await getUserId();
   if (!userId) return [];
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("recipes")
     .select("category_id, categories(name)")
     .eq("user_id", userId);
+  if (error) throw error;
   const counts: Record<string, number> = {};
   type CategoryRow = { category_id: string | null; categories: { name: string } | null };
   ((data ?? []) as unknown as CategoryRow[]).forEach((recipe) => {
@@ -86,10 +90,11 @@ async function fetchCategoryDistribution() {
 async function fetchMostUsedIngredients() {
   const userId = await getUserId();
   if (!userId) return [];
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("recipe_ingredients")
     .select("ingredient_id, ingredients!inner(name, user_id)")
     .eq("ingredients.user_id", userId);
+  if (error) throw error;
   const counts: Record<string, { name: string; count: number }> = {};
   type IngredientUsageRow = { ingredient_id: string; ingredients: { name: string; user_id: string } | null };
   ((data ?? []) as unknown as IngredientUsageRow[]).forEach((ri) => {
@@ -107,10 +112,11 @@ async function fetchMostUsedIngredients() {
 async function fetchProfitabilityAnalysis() {
   const userId = await getUserId();
   if (!userId) return [];
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("pricing_history")
     .select("recipe_name, suggested_price, recipe_cost, profit_margin_percentage")
     .eq("user_id", userId);
+  if (error) throw error;
   const stats: Record<string, { name: string; avgPrice: number; avgCost: number; avgMargin: number; count: number }> = {};
   (data ?? []).forEach((item) => {
     stats[item.recipe_name] ??= { name: item.recipe_name, avgPrice: 0, avgCost: 0, avgMargin: 0, count: 0 };

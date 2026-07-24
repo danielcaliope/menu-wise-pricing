@@ -8,6 +8,7 @@ import { toast } from "@/hooks/use-toast";
 import { Plus, Trash2 } from "lucide-react";
 import { useRecipeIngredients, useAddRecipeIngredient, useRemoveRecipeIngredient } from "@/features/recipes/api";
 import { calculateIngredientLineCost } from "@/domain/pricing";
+import { formatUnitCost } from "@/lib/currency";
 
 type Ingredient = { id: string; name: string; unit: string; unit_cost: number };
 
@@ -24,17 +25,18 @@ export function RecipeIngredientsEditor({ recipeId, ingredients }: RecipeIngredi
   const [quantity, setQuantity] = useState("");
 
   const handleAdd = async () => {
-    if (!selectedIngredientId || !quantity) {
+    const parsedQuantity = parseFloat(quantity);
+    if (!selectedIngredientId || !quantity || Number.isNaN(parsedQuantity) || parsedQuantity <= 0) {
       toast({
         title: "Erro",
-        description: "Selecione um ingrediente e informe a quantidade",
+        description: "Selecione um ingrediente e informe uma quantidade maior que zero",
         variant: "destructive",
       });
       return;
     }
 
     try {
-      await addIngredient.mutateAsync({ recipeId, ingredientId: selectedIngredientId, quantity: parseFloat(quantity) });
+      await addIngredient.mutateAsync({ recipeId, ingredientId: selectedIngredientId, quantity: parsedQuantity });
       toast({ title: "Ingrediente adicionado!" });
       setSelectedIngredientId("");
       setQuantity("");
@@ -64,27 +66,29 @@ export function RecipeIngredientsEditor({ recipeId, ingredients }: RecipeIngredi
   return (
     <div className="space-y-4">
       <h3 className="font-semibold">Ingredientes</h3>
-      <div className="flex gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row">
         <div className="flex-1 space-y-2">
-          <Label>Ingrediente</Label>
+          <Label htmlFor="recipe-ingredient-select">Ingrediente</Label>
           <Select value={selectedIngredientId} onValueChange={setSelectedIngredientId}>
-            <SelectTrigger>
+            <SelectTrigger id="recipe-ingredient-select">
               <SelectValue placeholder="Selecione um ingrediente" />
             </SelectTrigger>
             <SelectContent>
               {ingredients.map((ingredient) => (
                 <SelectItem key={ingredient.id} value={ingredient.id}>
-                  {ingredient.name} ({ingredient.unit}) - R$ {ingredient.unit_cost.toFixed(2)}/{ingredient.unit}
+                  {ingredient.name} ({ingredient.unit}) - R$ {formatUnitCost(ingredient.unit_cost)}/{ingredient.unit}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
-        <div className="w-32 space-y-2">
-          <Label>Quantidade</Label>
+        <div className="sm:w-32 space-y-2">
+          <Label htmlFor="recipe-ingredient-quantity">Quantidade</Label>
           <Input
+            id="recipe-ingredient-quantity"
             type="number"
             step="0.001"
+            min="0"
             value={quantity}
             onChange={(e) => setQuantity(e.target.value)}
             placeholder="0"
@@ -116,12 +120,18 @@ export function RecipeIngredientsEditor({ recipeId, ingredients }: RecipeIngredi
               <TableRow key={ri.id}>
                 <TableCell className="font-medium">{ri.ingredients.name}</TableCell>
                 <TableCell>{ri.quantity} {ri.ingredients.unit}</TableCell>
-                <TableCell>R$ {ri.ingredients.unit_cost.toFixed(2)}</TableCell>
+                <TableCell>R$ {formatUnitCost(ri.ingredients.unit_cost)}</TableCell>
                 <TableCell className="font-semibold">
                   R$ {calculateIngredientLineCost({ quantity: ri.quantity, unitCost: ri.ingredients.unit_cost }).toFixed(2)}
                 </TableCell>
                 <TableCell className="text-right">
-                  <Button type="button" variant="ghost" size="icon" onClick={() => handleRemove(ri.id)}>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    aria-label={`Remover ${ri.ingredients.name}`}
+                    onClick={() => handleRemove(ri.id)}
+                  >
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
                 </TableCell>

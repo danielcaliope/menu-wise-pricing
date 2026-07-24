@@ -7,7 +7,13 @@ function InfoTooltip({ children }: { children: string }) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <span className="ml-1 text-muted-foreground cursor-help">ℹ️</span>
+        <button
+          type="button"
+          className="ml-1 text-muted-foreground cursor-help"
+          aria-label="Mais informações"
+        >
+          ℹ️
+        </button>
       </TooltipTrigger>
       <TooltipContent className="max-w-xs">
         <p>{children}</p>

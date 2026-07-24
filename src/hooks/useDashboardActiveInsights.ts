@@ -104,13 +104,14 @@ async function fetchLowStock(userId: string): Promise<LowStockItem[]> {
 }
 
 async function fetchIngredientCostAlerts(userId: string): Promise<{ enabled: boolean; items: IngredientCostAlertItem[] }> {
-  const { data: config } = await supabase
+  const { data: config, error: configError } = await supabase
     .from("cost_alerts")
     .select("enabled")
     .eq("user_id", userId)
     .eq("alert_type", "ingredient_price_increase")
     .maybeSingle();
 
+  if (configError) throw configError;
   const enabled = !!config?.enabled;
   if (!enabled) return { enabled: false, items: [] };
 
@@ -136,13 +137,14 @@ async function fetchIngredientCostAlerts(userId: string): Promise<{ enabled: boo
 }
 
 async function fetchRecipeCostIncreaseThreshold(userId: string): Promise<number> {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("cost_alerts")
     .select("threshold_percentage")
     .eq("user_id", userId)
     .eq("alert_type", "recipe_cost_increase")
     .maybeSingle();
 
+  if (error) throw error;
   return data?.threshold_percentage ?? DEFAULT_COST_INCREASE_THRESHOLD;
 }
 
@@ -154,12 +156,18 @@ async function fetchMonthlyTrend(userId: string): Promise<MonthlyTrend> {
   const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
 
-  const [{ data: currentMonth }, { data: lastMonth }] = await Promise.all([
+  const [
+    { data: currentMonth, error: currentMonthError },
+    { data: lastMonth, error: lastMonthError },
+  ] = await Promise.all([
     supabase.from("sales").select("final_price, total_amount, profit").eq("user_id", userId)
       .gte("sale_date", currentMonthStart.toISOString()),
     supabase.from("sales").select("final_price, total_amount, profit").eq("user_id", userId)
       .gte("sale_date", lastMonthStart.toISOString()).lte("sale_date", lastMonthEnd.toISOString()),
   ]);
+
+  if (currentMonthError) throw currentMonthError;
+  if (lastMonthError) throw lastMonthError;
 
   type MonthSaleRow = { final_price: number | null; total_amount: number | null; profit: number | null };
   const sumProfit = (rows: MonthSaleRow[] | null) =>

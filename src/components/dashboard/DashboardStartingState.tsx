@@ -15,7 +15,7 @@ async function fetchLatestPrice(): Promise<LatestPrice> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("pricing_history")
     .select("recipe_name, recipe_cost, suggested_price")
     .eq("user_id", user.id)
@@ -23,6 +23,7 @@ async function fetchLatestPrice(): Promise<LatestPrice> {
     .limit(1)
     .maybeSingle();
 
+  if (error) throw error;
   return data;
 }
 
